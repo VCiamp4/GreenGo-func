@@ -11,6 +11,7 @@ import { Achievements } from './Achievements';
 import { Store } from './Store';
 import { Notifications } from './Notifications';
 import { Settings as SettingsPanel } from './Settings';
+import { Profile } from './Profile';
 
 interface MainMenuProps {
   userName: string;
@@ -27,6 +28,7 @@ export function MainMenu({ userName, userEmail }: MainMenuProps) {
   const [showStore, setShowStore] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [scannedData, setScannedData] = useState('');
 
   // Datos de racha
@@ -76,6 +78,10 @@ export function MainMenu({ userName, userEmail }: MainMenuProps) {
     return <SettingsPanel userName={userName} userEmail={userEmail} onBack={() => setShowSettings(false)} />;
   }
 
+  if (showProfile) {
+    return <Profile userName={userName} userLevel={userLevel} totalPoints={totalPoints} streakDays={streakDays} onBack={() => setShowProfile(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pb-32">
       {/* Header con glassmorphism */}
@@ -90,7 +96,10 @@ export function MainMenu({ userName, userEmail }: MainMenuProps) {
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             {/* Avatar/Perfil mejorado */}
-            <button className="relative group">
+            <button 
+              onClick={() => setShowProfile(true)}
+              className="relative group"
+            >
               <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full blur opacity-40 group-hover:opacity-70 transition duration-300"></div>
               <Avatar className="relative h-16 w-16 border-3 border-white shadow-2xl ring-4 ring-white/20">
                 <AvatarFallback className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white text-xl">

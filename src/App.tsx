@@ -52,16 +52,16 @@ export default function App() {
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
       {/* Fondo con imagen de reciclaje */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center pointer-events-none"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1558583082-409143c794ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWN5Y2xpbmclMjB3YXN0ZSUyMGVudmlyb25tZW50fGVufDF8fHx8MTc2MjY0NTgyMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
+          backgroundImage: `url('https://images.unsplash.com/photo-1558583082-409143c794ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWN5Y2xpbmclMjB3YXN0ZSUyMGVudmly[...]')`
         }}
       />
       {/* Overlay mejorado con gradiente */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-green-800/85 to-teal-900/90" />
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-green-800/85 to-teal-900/90 pointer-events-none" />
       
       {/* Efectos de luz animados */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-float"></div>
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl animate-pulse-glow"></div>
       </div>
@@ -91,8 +91,8 @@ export default function App() {
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700">Correo electrónico</Label>
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-hover:text-emerald-600 transition-colors" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"></div>
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-hover:text-emerald-600 transition-colors pointer-events-none" />
                   <Input
                     id="email"
                     type="email"
@@ -109,8 +109,8 @@ export default function App() {
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-gray-700">Contraseña</Label>
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-hover:text-emerald-600 transition-colors" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"></div>
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-hover:text-emerald-600 transition-colors pointer-events-none" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
