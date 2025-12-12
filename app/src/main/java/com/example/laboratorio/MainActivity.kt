@@ -1,11 +1,12 @@
-package com.example.greengo
+package com.example.laboratorio
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
-import com.example.greengo.ui.login.LoginScreen
+import com.example.laboratorio.ui.login.LoginScreen
 import com.example.laboratorio.ui.theme.LaboratorioTheme
+import com.example.laboratorio.ui.signup.SignUpScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,8 +34,13 @@ fun AppEntry() {
         }
 
         showSignUp -> {
-            // TODO: acá va tu pantalla de registro
-            androidx.compose.material3.Text(text = "Pantalla de Registro (TODO)")
+            SignUpScreen(
+                onBackToLogin = { showSignUp = false },
+                onSignUpSuccess = { email ->
+                    userEmail = email
+                    showSignUp = false
+                }
+            )
         }
 
         else -> {
