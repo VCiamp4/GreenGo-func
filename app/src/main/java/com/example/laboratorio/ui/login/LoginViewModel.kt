@@ -1,4 +1,4 @@
-package com.example.greengo.ui.login
+package com.example.laboratorio.ui.login
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

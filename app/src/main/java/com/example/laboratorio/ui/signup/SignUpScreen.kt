@@ -1,6 +1,5 @@
-package com.example.laboratorio.ui.login
+package com.example.laboratorio.ui.signup
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -17,40 +17,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.laboratorio.R
 import com.example.laboratorio.ui.theme.GreenDark
 import com.example.laboratorio.ui.theme.GreenPrimary
 import com.example.laboratorio.ui.theme.GreenTeal
 import com.example.laboratorio.ui.theme.LightGrayBg
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: (String, String) -> Unit,
-    onGoToSignUp: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+fun SignUpScreen(
+    onBackToLogin: () -> Unit,
+    onSignUpSuccess: (email: String) -> Unit,
+    viewModel: SignUpViewModel = viewModel()
 ) {
     val state = viewModel.uiState
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Fondo (asegurate de tener bg_recycling en res/drawable)
-
-
-        // Overlay
+        // Fondo con gradiente (SIN imagen)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            GreenDark.copy(alpha = 0.90f),
-                            GreenTeal.copy(alpha = 0.85f)
+                            GreenDark.copy(alpha = 0.95f),
+                            GreenTeal.copy(alpha = 0.90f)
                         )
                     )
                 )
@@ -62,7 +56,6 @@ fun LoginScreen(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(Modifier.height(48.dp))
 
             // Logo
@@ -83,19 +76,18 @@ fun LoginScreen(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Bienvenido",
+                text = "Crear Cuenta",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall
             )
             Text(
-                text = "Inicia sesión para continuar reciclando",
+                text = "Regístrate para empezar a reciclar",
                 color = Color.White.copy(alpha = 0.85f),
                 style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(Modifier.height(28.dp))
 
-            // Card
             Card(
                 shape = RoundedCornerShape(28.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -103,21 +95,20 @@ fun LoginScreen(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
 
-                    Text("Iniciar Sesión", style = MaterialTheme.typography.titleMedium)
+                    Text("Registro", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = "Ingresa tus credenciales para acceder",
+                        text = "Completa tus datos para crear una cuenta",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Email
                     OutlinedTextField(
-                        value = state.email,
-                        onValueChange = viewModel::onEmailChange,
-                        placeholder = { Text("tu@email.com") },
-                        leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                        value = state.username,
+                        onValueChange = viewModel::onUsernameChange,
+                        placeholder = { Text("Nombre de usuario") },
+                        leadingIcon = { Icon(Icons.Filled.Person, null) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(LightGrayBg, RoundedCornerShape(12.dp)),
@@ -126,12 +117,24 @@ fun LoginScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Password
+                    OutlinedTextField(
+                        value = state.email,
+                        onValueChange = viewModel::onEmailChange,
+                        placeholder = { Text("tu@email.com") },
+                        leadingIcon = { Icon(Icons.Filled.Email, null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(LightGrayBg, RoundedCornerShape(12.dp)),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
                     OutlinedTextField(
                         value = state.password,
                         onValueChange = viewModel::onPasswordChange,
-                        placeholder = { Text("••••••••") },
-                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        placeholder = { Text("Contraseña") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, null) },
                         trailingIcon = {
                             IconButton(onClick = viewModel::toggleShowPassword) {
                                 Icon(
@@ -149,29 +152,40 @@ fun LoginScreen(
                         singleLine = true
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
 
-                    Text(
-                        text = "¿Olvidaste tu contraseña?",
-                        color = GreenPrimary,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.align(Alignment.End)
+                    OutlinedTextField(
+                        value = state.confirmPassword,
+                        onValueChange = viewModel::onConfirmPasswordChange,
+                        placeholder = { Text("Confirmar contraseña") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, null) },
+                        trailingIcon = {
+                            IconButton(onClick = viewModel::toggleShowConfirmPassword) {
+                                Icon(
+                                    imageVector = if (state.showConfirmPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        visualTransformation =
+                            if (state.showConfirmPassword) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(LightGrayBg, RoundedCornerShape(12.dp)),
+                        singleLine = true
                     )
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Botón login
                     Button(
-                        onClick = {
-                            viewModel.login { name, email ->
-                                onLoginSuccess(name, email)
-                            }
-                        },
+                        onClick = { viewModel.signup { email -> onSignUpSuccess(email) } },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = !state.isLoading
                     ) {
                         if (state.isLoading) {
                             CircularProgressIndicator(
@@ -180,58 +194,36 @@ fun LoginScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Iniciando sesión...", color = Color.White)
+                            Text("Creando cuenta...", color = Color.White)
                         } else {
-                            Text("Iniciar Sesión", color = Color.White)
+                            Text("Crear Cuenta", color = Color.White)
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
-
-                    DividerWithText("o continúa con")
-
                     Spacer(Modifier.height(12.dp))
 
-                    // Botón Google (sin ícono por ahora, porque Icons.Default.Google no existe)
-                    OutlinedButton(
-                        onClick = { /* TODO: Google Sign-In */ },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Google")
+                    state.errorMessage?.let { msg ->
+                        Text(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.height(6.dp))
                     }
-
-                    Spacer(Modifier.height(12.dp))
 
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("¿No tienes cuenta? ")
+                        Text("¿Ya tienes cuenta? ")
                         Text(
-                            text = "Regístrate",
+                            text = "Inicia sesión",
                             color = GreenPrimary,
-                            modifier = Modifier.clickable(onClick = onGoToSignUp)
+                            modifier = Modifier.clickable(onClick = onBackToLogin)
                         )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DividerWithText(text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Divider(modifier = Modifier.weight(1f))
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 12.dp),
-            color = Color.Gray,
-            style = MaterialTheme.typography.bodySmall
-        )
-        Divider(modifier = Modifier.weight(1f))
     }
 }

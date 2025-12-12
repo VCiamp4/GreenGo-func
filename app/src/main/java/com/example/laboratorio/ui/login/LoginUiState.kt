@@ -1,4 +1,4 @@
-package com.example.greengo.ui.login
+package com.example.laboratorio.ui.login
 
 data class LoginUiState(
     val email: String = "",
