@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.ui.auth.network.RetrofitClient
+import com.example.laboratorio.ui.auth.network.SignUpRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -38,13 +40,10 @@ class SignUpViewModel : ViewModel() {
     }
 
     fun signup(onSuccess: (email: String) -> Unit) {
-        if (uiState.username.isBlank() || uiState.email.isBlank() ||
-            uiState.password.isBlank() || uiState.confirmPassword.isBlank()
-        ) {
+        if (uiState.username.isBlank() || uiState.password.isBlank() || uiState.confirmPassword.isBlank()) {
             uiState = uiState.copy(errorMessage = "Completa todos los campos")
             return
         }
-
         if (uiState.password != uiState.confirmPassword) {
             uiState = uiState.copy(errorMessage = "Las contraseñas no coinciden")
             return
@@ -53,10 +52,29 @@ class SignUpViewModel : ViewModel() {
         uiState = uiState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            // Simulación (reemplazable por API real)
-            delay(1200)
-            uiState = uiState.copy(isLoading = false)
-            onSuccess(uiState.email)
+            try {
+                val response = RetrofitClient.authApi.signup(
+                    SignUpRequest(
+                        username = uiState.username,
+                        password = uiState.password
+                    )
+                )
+
+                // Tokens devueltos por /api/signup/
+                val accessToken = response.access
+                val refreshToken = response.refresh
+
+                uiState = uiState.copy(isLoading = false)
+
+                // Para tu flujo actual: volvés al login o logueás automáticamente.
+                onSuccess(uiState.username)
+
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = "No se pudo crear la cuenta (usuario inválido o ya existe)"
+                )
+            }
         }
     }
 }
