@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.ui.auth.network.LoginRequest
+import com.example.laboratorio.ui.auth.network.RetrofitClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -25,9 +27,7 @@ class LoginViewModel : ViewModel() {
         uiState = uiState.copy(showPassword = !uiState.showPassword)
     }
 
-    fun login(
-        onSuccess: (userName: String, email: String) -> Unit
-    ) {
+    fun login(onSuccess: (String, String) -> Unit) {
         if (uiState.email.isBlank() || uiState.password.isBlank()) {
             uiState = uiState.copy(errorMessage = "Completa todos los campos")
             return
@@ -36,15 +36,29 @@ class LoginViewModel : ViewModel() {
         uiState = uiState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            // Simulamos el login, como tu setTimeout de React
-            delay(1500)
-            val name = uiState.email.substringBefore("@")
-            uiState = uiState.copy(isLoading = false)
-            onSuccess(name, uiState.email)
-        }
-    }
+            try {
+                val response = RetrofitClient.authApi.login(
+                    LoginRequest(
+                        username = uiState.email, // ACÁ VA USERNAME
+                        password = uiState.password
+                    )
+                )
 
-    fun clearError() {
-        uiState = uiState.copy(errorMessage = null)
+                // Guardás tokens (por ahora en memoria)
+                val accessToken = response.access
+                val refreshToken = response.refresh
+
+                uiState = uiState.copy(isLoading = false)
+
+                // Podés usar el username directamente
+                onSuccess(uiState.email, uiState.email)
+
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = "Usuario o contraseña incorrectos"
+                )
+            }
+        }
     }
 }
