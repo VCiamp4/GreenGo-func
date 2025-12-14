@@ -1,6 +1,7 @@
 package com.example.laboratorio.ui.auth.network
 
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApiService {
@@ -12,4 +13,13 @@ interface AuthApiService {
 
     @POST("/api/signup/")
     suspend fun signup(@Body request: SignUpRequest): LoginResponse
+
+    @POST("/api/token/refresh/")
+    suspend fun refresh(@Body request: RefreshRequest): RefreshResponse
+
+    @POST("/api/logout/")
+    suspend fun logout(@Body request: LogoutRequest)
+
+    @GET("/api/datos_usuario/")
+    suspend fun datosUsuario(): DatosUsuarioResponse
 }

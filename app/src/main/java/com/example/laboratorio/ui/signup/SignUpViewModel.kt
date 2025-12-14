@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio.ui.auth.network.RetrofitClient
 import com.example.laboratorio.ui.auth.network.SignUpRequest
-import kotlinx.coroutines.delay
+import com.example.laboratorio.ui.auth.network.TokenStore
 import kotlinx.coroutines.launch
 
 class SignUpViewModel : ViewModel() {
@@ -60,13 +60,12 @@ class SignUpViewModel : ViewModel() {
                     )
                 )
 
-                // Tokens devueltos por /api/signup/
-                val accessToken = response.access
-                val refreshToken = response.refresh
+
+                TokenStore.setTokens(access = response.access, refresh = response.refresh)
 
                 uiState = uiState.copy(isLoading = false)
 
-                // Para tu flujo actual: volvés al login o logueás automáticamente.
+
                 onSuccess(uiState.username)
 
             } catch (e: Exception) {

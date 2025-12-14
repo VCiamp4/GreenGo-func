@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio.ui.auth.network.LoginRequest
 import com.example.laboratorio.ui.auth.network.RetrofitClient
-import kotlinx.coroutines.delay
+import com.example.laboratorio.ui.auth.network.TokenStore
 import kotlinx.coroutines.launch
 
 class LoginViewModel : ViewModel() {
@@ -39,18 +39,17 @@ class LoginViewModel : ViewModel() {
             try {
                 val response = RetrofitClient.authApi.login(
                     LoginRequest(
-                        username = uiState.email, // ACÁ VA USERNAME
+                        username = uiState.email, // En UI le decís email, pero al backend va username
                         password = uiState.password
                     )
                 )
 
-                // Guardás tokens (por ahora en memoria)
-                val accessToken = response.access
-                val refreshToken = response.refresh
+
+                TokenStore.setTokens(access = response.access, refresh = response.refresh)
 
                 uiState = uiState.copy(isLoading = false)
 
-                // Podés usar el username directamente
+                // Por ahora usamos el username para ambos (nombre/email) en tu flujo
                 onSuccess(uiState.email, uiState.email)
 
             } catch (e: Exception) {
