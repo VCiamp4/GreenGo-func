@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import com.example.laboratorio.ui.auth.network.TokenStore
 import com.example.laboratorio.ui.login.LoginScreen
+import com.example.laboratorio.ui.main.MainMenu
 import com.example.laboratorio.ui.theme.LaboratorioTheme
 import com.example.laboratorio.ui.signup.SignUpScreen
 
@@ -28,10 +30,14 @@ fun AppEntry() {
 
     when {
         isLoggedIn -> {
-            // TODO: acá va tu MainMenu cuando lo tengamos
-            // Por ahora mostramos un texto de prueba:
-            androidx.compose.material3.Text(text = "Hola $userName ($userEmail)")
+            MainMenu(
+                onLogout = {
+                    TokenStore.clear()
+                    isLoggedIn = false
+                }
+            )
         }
+
 
         showSignUp -> {
             SignUpScreen(
