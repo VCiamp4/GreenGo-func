@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.laboratorio.ui.auth.network.TokenStore
 import com.example.laboratorio.ui.login.LoginScreen
 import com.example.laboratorio.ui.main.MainMenu
@@ -23,10 +24,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppEntry() {
-    var isLoggedIn by remember { mutableStateOf(false) }
-    var userName by remember { mutableStateOf("") }
-    var userEmail by remember { mutableStateOf("") }
-    var showSignUp by remember { mutableStateOf(false) }
+    var isLoggedIn by rememberSaveable { mutableStateOf(false) }
+    var userName by rememberSaveable { mutableStateOf("") }
+    var userEmail by rememberSaveable { mutableStateOf("") }
+    var showSignUp by rememberSaveable { mutableStateOf(false) }
 
     when {
         isLoggedIn -> {
