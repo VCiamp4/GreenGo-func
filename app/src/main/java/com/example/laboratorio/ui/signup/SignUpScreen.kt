@@ -117,17 +117,6 @@ fun SignUpScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    OutlinedTextField(
-                        value = state.email,
-                        onValueChange = viewModel::onEmailChange,
-                        placeholder = { Text("tu@email.com") },
-                        leadingIcon = { Icon(Icons.Filled.Email, null) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(LightGrayBg, RoundedCornerShape(12.dp)),
-                        singleLine = true
-                    )
-
                     Spacer(Modifier.height(12.dp))
 
                     OutlinedTextField(

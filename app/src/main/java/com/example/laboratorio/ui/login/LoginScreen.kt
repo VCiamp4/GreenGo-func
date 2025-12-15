@@ -1,14 +1,12 @@
 package com.example.laboratorio.ui.login
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -17,13 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.laboratorio.R
 import com.example.laboratorio.ui.theme.GreenDark
 import com.example.laboratorio.ui.theme.GreenPrimary
 import com.example.laboratorio.ui.theme.GreenTeal
@@ -39,18 +34,15 @@ fun LoginScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Fondo (asegurate de tener bg_recycling en res/drawable)
-
-
-        // Overlay
+        // Fondo simple con gradiente (sin imagen)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            GreenDark.copy(alpha = 0.90f),
-                            GreenTeal.copy(alpha = 0.85f)
+                        listOf(
+                            GreenDark.copy(alpha = 0.95f),
+                            GreenTeal.copy(alpha = 0.90f)
                         )
                     )
                 )
@@ -62,40 +54,29 @@ fun LoginScreen(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(Modifier.height(48.dp))
 
-            // Logo
+            // Logo simple
             Box(
                 modifier = Modifier
                     .size(72.dp)
                     .background(GreenPrimary, RoundedCornerShape(20.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Autorenew,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(36.dp)
-                )
+                Text("GG", color = Color.White, style = MaterialTheme.typography.titleLarge)
             }
 
             Spacer(Modifier.height(16.dp))
 
+            Text("Bienvenido", color = Color.White, style = MaterialTheme.typography.headlineSmall)
             Text(
-                text = "Bienvenido",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Text(
-                text = "Inicia sesión para continuar reciclando",
+                "Inicia sesión para continuar reciclando",
                 color = Color.White.copy(alpha = 0.85f),
                 style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(Modifier.height(28.dp))
 
-            // Card
             Card(
                 shape = RoundedCornerShape(28.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -105,35 +86,41 @@ fun LoginScreen(
 
                     Text("Iniciar Sesión", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = "Ingresa tus credenciales para acceder",
+                        "Ingresa tus credenciales para acceder",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Email
+                    // Usuario
                     OutlinedTextField(
-                        value = state.email,
+                        value = state.email, // lo mantenemos así para no tocar ViewModel ahora
                         onValueChange = viewModel::onEmailChange,
-                        placeholder = { Text("tu@email.com") },
-                        leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                        label = { Text("Usuario") },
+                        placeholder = { Text("tu_usuario") },
+                        leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(LightGrayBg, RoundedCornerShape(12.dp)),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !state.isLoading
                     )
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Password
+                    // Contraseña
                     OutlinedTextField(
                         value = state.password,
                         onValueChange = viewModel::onPasswordChange,
+                        label = { Text("Contraseña") },
                         placeholder = { Text("••••••••") },
                         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         trailingIcon = {
-                            IconButton(onClick = viewModel::toggleShowPassword) {
+                            IconButton(
+                                onClick = viewModel::toggleShowPassword,
+                                enabled = !state.isLoading
+                            ) {
                                 Icon(
                                     imageVector = if (state.showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                                     contentDescription = null
@@ -146,16 +133,21 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(LightGrayBg, RoundedCornerShape(12.dp)),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !state.isLoading
                     )
 
                     Spacer(Modifier.height(8.dp))
 
                     Text(
-                        text = "¿Olvidaste tu contraseña?",
+                        "¿Olvidaste tu contraseña?",
                         color = GreenPrimary,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.align(Alignment.End)
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .clickable(enabled = !state.isLoading) {
+                                // TODO: recuperar contraseña (si lo piden)
+                            }
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -167,6 +159,7 @@ fun LoginScreen(
                                 onLoginSuccess(name, email)
                             }
                         },
+                        enabled = !state.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
@@ -179,59 +172,41 @@ fun LoginScreen(
                                 color = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(10.dp))
                             Text("Iniciando sesión...", color = Color.White)
                         } else {
                             Text("Iniciar Sesión", color = Color.White)
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
-
-                    DividerWithText("o continúa con")
-
-                    Spacer(Modifier.height(12.dp))
-
-                    // Botón Google (sin ícono por ahora, porque Icons.Default.Google no existe)
-                    OutlinedButton(
-                        onClick = { /* TODO: Google Sign-In */ },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Google")
+                    // Error visible
+                    state.errorMessage?.let { msg ->
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
 
+                    // Registro
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("¿No tienes cuenta? ")
                         Text(
-                            text = "Regístrate",
+                            "Regístrate",
                             color = GreenPrimary,
-                            modifier = Modifier.clickable(onClick = onGoToSignUp)
+                            modifier = Modifier.clickable(enabled = !state.isLoading) {
+                                onGoToSignUp()
+                            }
                         )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DividerWithText(text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Divider(modifier = Modifier.weight(1f))
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 12.dp),
-            color = Color.Gray,
-            style = MaterialTheme.typography.bodySmall
-        )
-        Divider(modifier = Modifier.weight(1f))
     }
 }
