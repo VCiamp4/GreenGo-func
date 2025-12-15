@@ -91,6 +91,7 @@ fun MainMenu(
                 options.setCameraId(0)  // Usa una cámara específica del dispositivo
                 options.setBeepEnabled(false)
                 options.setBarcodeImageEnabled(true)
+                options.setOrientationLocked(true) // Bloquea la cámara en la orientación actual
                 scanLauncher.launch(options)
             }) {
                 Text("Escanear QR")
