@@ -37,3 +37,12 @@ data class DatosUsuarioResponse(
     val username: String
 )
 
+data class ReclamarResiduoRequest(
+    val id_residuo: String
+)
+
+data class ReclamarResiduoResponse(
+    val message: String,
+    val categoria: String,
+    val puntos: Int
+)
