@@ -5,8 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.ui.auth.network.ApiErrorResponse
 import com.example.laboratorio.ui.auth.network.ReclamarResiduoRequest
 import com.example.laboratorio.ui.auth.network.RetrofitClient
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 data class MainMenuUiState(
@@ -14,6 +16,7 @@ data class MainMenuUiState(
     val isClaiming: Boolean = false,
     val username: String? = null,
     val userId: Int? = null,
+    val puntosTotales: Int = 0,
     val errorMessage: String? = null,
     val qrCodeContent: String? = null,
     val reclamarMessage: String? = null,
@@ -40,39 +43,41 @@ class MainMenuViewModel : ViewModel() {
             try {
                 val response = RetrofitClient.authApi.reclamarResiduo(ReclamarResiduoRequest(id_residuo = idResiduo))
 
-                when (response.code()) {
-                    200 -> {
-                        val body = response.body()
-                        uiState = uiState.copy(
-                            isClaiming = false,
-                            reclamarMessage = body?.message,
-                            categoria = body?.categoria,
-                            puntos = body?.puntos
-                        )
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    uiState = uiState.copy(
+                        isClaiming = false,
+                        reclamarMessage = body?.message,
+                        categoria = body?.categoria,
+                        puntos = body?.puntos
+                    )
+                    // Vuelve a cargar los datos del usuario para actualizar los puntos totales
+                    loadUserData()
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    var errorMessage = "Ocurrió un error inesperado."
+                    if (errorBody != null) {
+                        try {
+                            val errorResponse = Gson().fromJson(errorBody, ApiErrorResponse::class.java)
+                            errorMessage = errorResponse.error
+                        } catch (e: Exception) {
+                            errorMessage = when(response.code()) {
+                                400 -> "Error en la petición. El residuo puede haber sido reclamado."
+                                404 -> "Residuo no encontrado."
+                                else -> "Error del servidor."
+                            }
+                        }
                     }
-                    400 -> {
-                        uiState = uiState.copy(
-                            isClaiming = false,
-                            reclamarError = "El residuo ya fue reclamado o hubo un error."
-                        )
-                    }
-                    404 -> {
-                        uiState = uiState.copy(
-                            isClaiming = false,
-                            reclamarError = "No se encontró el residuo."
-                        )
-                    }
-                    else -> {
-                        uiState = uiState.copy(
-                            isClaiming = false,
-                            reclamarError = "Error al reclamar el residuo."
-                        )
-                    }
+                    uiState = uiState.copy(
+                        isClaiming = false,
+                        reclamarError = errorMessage
+                    )
                 }
+
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     isClaiming = false,
-                    reclamarError = "Error de red al reclamar el residuo."
+                    reclamarError = "Error de red. No se pudo conectar al servidor."
                 )
             }
         }
@@ -88,7 +93,8 @@ class MainMenuViewModel : ViewModel() {
                 uiState = uiState.copy(
                     isLoading = false,
                     username = response.username,
-                    userId = response.id
+                    userId = response.id,
+                    puntosTotales = response.puntos_totales
                 )
 
             } catch (e: Exception) {
