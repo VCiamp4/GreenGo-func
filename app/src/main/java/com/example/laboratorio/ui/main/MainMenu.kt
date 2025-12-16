@@ -75,6 +75,7 @@ fun MainMenu(
                 state.username != null -> {
                     Text(text = "Usuario: ${state.username}")
                     Text(text = "ID: ${state.userId}")
+                    Text(text = "Puntos Totales: ${state.puntosTotales}")
                 }
 
                 else -> {

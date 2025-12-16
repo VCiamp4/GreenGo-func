@@ -34,7 +34,8 @@ data class LogoutRequest(
 
 data class DatosUsuarioResponse(
     val id: Int,
-    val username: String
+    val username: String,
+    val puntos_totales: Int
 )
 
 data class ReclamarResiduoRequest(
@@ -45,4 +46,8 @@ data class ReclamarResiduoResponse(
     val message: String,
     val categoria: String,
     val puntos: Int
+)
+
+data class ApiErrorResponse(
+    val error: String
 )
