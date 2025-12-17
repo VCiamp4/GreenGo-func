@@ -7,7 +7,7 @@ class AuthHeaderInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
 
-        // No agregamos auth a endpoints de auth (opcional, pero prolijo)
+        
         val path = original.url.encodedPath
         val isAuthEndpoint =
             path.startsWith("/api/login/") ||
