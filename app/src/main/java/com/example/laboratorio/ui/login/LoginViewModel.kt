@@ -39,7 +39,7 @@ class LoginViewModel : ViewModel() {
             try {
                 val response = RetrofitClient.authApi.login(
                     LoginRequest(
-                        username = uiState.email, // En UI le decís email, pero al backend va username
+                        username = uiState.email, 
                         password = uiState.password
                     )
                 )
@@ -49,7 +49,7 @@ class LoginViewModel : ViewModel() {
 
                 uiState = uiState.copy(isLoading = false)
 
-                // Por ahora usamos el username para ambos (nombre/email) en tu flujo
+                
                 onSuccess(uiState.email, uiState.email)
 
             } catch (e: Exception) {
