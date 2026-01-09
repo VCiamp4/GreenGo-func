@@ -14,15 +14,18 @@ import kotlinx.coroutines.launch
 data class MainMenuUiState(
     val isLoading: Boolean = false,
     val isClaiming: Boolean = false,
+
     val username: String? = null,
     val userId: Int? = null,
     val puntosTotales: Int = 0,
-    val errorMessage: String? = null,
-    val qrCodeContent: String? = null,
+
     val reclamarMessage: String? = null,
     val reclamarError: String? = null,
+
     val categoria: String? = null,
-    val puntos: Int? = null
+    val puntos: Int? = null,
+
+    val errorMessage: String? = null
 )
 
 class MainMenuViewModel : ViewModel() {
@@ -30,9 +33,40 @@ class MainMenuViewModel : ViewModel() {
     var uiState by mutableStateOf(MainMenuUiState())
         private set
 
-    fun onScanResult(result: String?) {
-        if (!result.isNullOrBlank()) {
-            reclamarResiduo(result)
+    fun onScanResult(qrContent: String?) {
+        if (qrContent.isNullOrBlank()) {
+            uiState = uiState.copy(
+                reclamarError = "QR inválido"
+            )
+            return
+        }
+
+        uiState = uiState.copy(
+            isClaiming = true,
+            reclamarError = null,
+            reclamarMessage = null
+        )
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.authApi.reclamarResiduo(
+                    mapOf("codigo" to qrContent)
+                )
+
+                uiState = uiState.copy(
+                    isClaiming = false,
+                    reclamarMessage = response.mensaje,
+                    categoria = response.categoria,
+                    puntos = response.puntos,
+                    puntosTotales = response.puntos_totales
+                )
+
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    isClaiming = false,
+                    reclamarError = "No se pudo reclamar el residuo"
+                )
+            }
         }
     }
 
@@ -111,8 +145,7 @@ class MainMenuViewModel : ViewModel() {
             reclamarMessage = null,
             reclamarError = null,
             categoria = null,
-            puntos = null,
-            qrCodeContent = null
+            puntos = null
         )
     }
 

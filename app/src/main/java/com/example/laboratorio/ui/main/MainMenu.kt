@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.example.laboratorio.ui.store.StoreScreen
 
 @Composable
 fun MainMenu(
@@ -27,7 +28,6 @@ fun MainMenu(
     viewModel: MainMenuViewModel = viewModel()
 ) {
     val state = viewModel.uiState
-
     var selectedTab by remember { mutableStateOf(MainTab.SCAN) }
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
@@ -38,12 +38,18 @@ fun MainMenu(
         viewModel.loadUserData()
     }
 
-    // Dialog de resultado de reclamar (éxito / error)
+    // Dialog resultado de reclamar QR
     if (state.reclamarMessage != null || state.reclamarError != null) {
         val isError = state.reclamarError != null
+
         AlertDialog(
             onDismissRequest = { viewModel.clearReclamarStatus() },
-            title = { Text(if (isError) "Error" else "Residuo reclamado") },
+            title = {
+                Text(
+                    text = if (isError) "Error" else "Residuo reclamado",
+                    color = if (isError) Color(0xFFB00020) else Color(0xFF0F8C6E)
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (isError) {
@@ -51,12 +57,21 @@ fun MainMenu(
                     } else {
                         Text(state.reclamarMessage ?: "OK")
                         state.categoria?.let { Text("Categoría: $it") }
-                        state.puntos?.let { Text("Puntos: $it") }
+                        state.puntos?.let { Text("Puntos ganados: $it") }
+                        Text(
+                            text = "Total actual: ${state.puntosTotales} pts",
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             },
             confirmButton = {
-                Button(onClick = { viewModel.clearReclamarStatus() }) {
+                Button(
+                    onClick = { viewModel.clearReclamarStatus() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isError) Color(0xFFB00020) else Color(0xFF0F8C6E)
+                    )
+                ) {
                     Text("Cerrar")
                 }
             }
@@ -100,23 +115,34 @@ fun MainMenu(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 18.dp, vertical = 18.dp),
+                    .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 TopHeader(
                     username = state.username ?: "Usuario",
-                    level = 5, // HARDCODEADO
+                    level = 5, // hardcodeado
                     onLogout = onLogout
                 )
 
                 when (selectedTab) {
-                    MainTab.STORE -> HomeContent(state)
-                    MainTab.SCAN -> HomeContent(state)
-                    MainTab.RANKING -> HomeContent(state)
+                    MainTab.STORE -> {
+                        StoreScreen(
+                            points = state.puntosTotales
+                        )
+                    }
+
+                    MainTab.SCAN -> {
+                        HomeContent(state)
+                    }
+
+                    MainTab.RANKING -> {
+                        // Por ahora lo dejamos igual
+                        HomeContent(state)
+                    }
                 }
             }
 
-            // Overlay cuando está reclamando QR/puntos
+            // Overlay de carga al reclamar QR
             if (state.isClaiming) {
                 Box(
                     modifier = Modifier
@@ -146,17 +172,21 @@ private fun HomeContent(state: MainMenuUiState) {
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Error", fontWeight = FontWeight.SemiBold, color = Color(0xFFB00020))
+                    Text(
+                        "Error",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFB00020)
+                    )
                     Spacer(Modifier.height(6.dp))
-                    Text(state.errorMessage ?: "Error desconocido")
+                    Text(state.errorMessage)
                 }
             }
         }
 
         else -> {
-            PointsCard(points = state.puntosTotales ?: 0)
-            StreakCard(days = 5) // HARDCODEADO
-            WeeklyProgressRow(doneCount = 5, total = 7) // HARDCODEADO
+            PointsCard(points = state.puntosTotales)
+            StreakCard(days = 5)
+            WeeklyProgressRow(doneCount = 5, total = 7)
         }
     }
 }
@@ -181,42 +211,28 @@ private fun TopHeader(
                     .background(Color(0xFF0F8C6E)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = Color.White
-                )
+                Icon(Icons.Filled.Person, null, tint = Color.White)
             }
 
             Spacer(Modifier.width(10.dp))
 
             Column {
                 Text(
-                    text = "¡Hola, $username!",
+                    "¡Hola, $username!",
                     color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.SignalCellularAlt,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "Nivel $level",
-                        color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                Text(
+                    "Nivel $level",
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            HeaderIconButton(icon = Icons.Filled.Notifications, onClick = { /* TODO */ })
-            HeaderIconButton(icon = Icons.Filled.Logout, onClick = onLogout)
+            HeaderIconButton(Icons.Filled.Notifications) {}
+            HeaderIconButton(Icons.Filled.Logout, onLogout)
         }
     }
 }
@@ -233,7 +249,7 @@ private fun HeaderIconButton(
             .clip(RoundedCornerShape(14.dp))
             .background(Color.White.copy(alpha = 0.15f))
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White)
+        Icon(icon, null, tint = Color.White)
     }
 }
 
@@ -242,7 +258,7 @@ private fun PointsCard(points: Int) {
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+        elevation = CardDefaults.cardElevation(10.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -256,39 +272,16 @@ private fun PointsCard(points: Int) {
                     .background(Color(0xFF15A37A)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Autorenew, // reciclaje “aprox”
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
-                )
+                Icon(Icons.Filled.Autorenew, null, tint = Color.White)
             }
 
             Spacer(Modifier.height(10.dp))
 
+            Text("Puntos totales")
             Text(
-                text = "Puntaje Total",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF4B5563)
-            )
-            Text(
-                text = "$points pts",
-                style = MaterialTheme.typography.titleLarge,
+                "$points pts",
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F8C6E)
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            AssistChip(
-                onClick = { },
-                label = { Text("Top 15% de recicladores") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.EmojiEvents,
-                        contentDescription = null
-                    )
-                }
             )
         }
     }
@@ -305,34 +298,9 @@ private fun StreakCard(days: Int) {
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFFEDD5)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color(0xFFF97316)
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "$days días consecutivos",
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827)
-                )
-                Text(
-                    text = "¡Mantén el ritmo!",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFF97316)
-                )
-            }
+            Icon(Icons.Filled.LocalFireDepartment, null, tint = Color(0xFFF97316))
+            Spacer(Modifier.width(10.dp))
+            Text("$days días consecutivos")
         }
     }
 }
@@ -346,40 +314,20 @@ private fun WeeklyProgressRow(doneCount: Int, total: Int) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = "Progreso semanal",
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF111827)
-            )
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                labels.take(total).forEachIndexed { index, day ->
-                    val done = index < doneCount
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(day, style = MaterialTheme.typography.bodySmall, color = Color(0xFF6B7280))
-                        Spacer(Modifier.height(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(if (done) Color(0xFF10B981) else Color(0xFFE5E7EB)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (done) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
+        Row(
+            modifier = Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            labels.take(total).forEachIndexed { index, day ->
+                val done = index < doneCount
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(day)
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(if (done) Color(0xFF10B981) else Color(0xFFE5E7EB))
+                    )
                 }
             }
         }
@@ -394,14 +342,11 @@ private fun BottomBar(
     onSelect: (MainTab) -> Unit,
     onScanClick: () -> Unit
 ) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 10.dp
-    ) {
+    NavigationBar {
         NavigationBarItem(
             selected = selected == MainTab.STORE,
             onClick = { onSelect(MainTab.STORE) },
-            icon = { Icon(Icons.Filled.Storefront, contentDescription = null) },
+            icon = { Icon(Icons.Filled.Storefront, null) },
             label = { Text("Tienda") }
         )
 
@@ -411,29 +356,14 @@ private fun BottomBar(
                 onSelect(MainTab.SCAN)
                 onScanClick()
             },
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF10B981)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.QrCodeScanner,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                }
-            },
-            label = { Text("Escanear") },
-            alwaysShowLabel = true
+            icon = { Icon(Icons.Filled.QrCodeScanner, null) },
+            label = { Text("Escanear") }
         )
 
         NavigationBarItem(
             selected = selected == MainTab.RANKING,
             onClick = { onSelect(MainTab.RANKING) },
-            icon = { Icon(Icons.Filled.Leaderboard, contentDescription = null) },
+            icon = { Icon(Icons.Filled.Leaderboard, null) },
             label = { Text("Ranking") }
         )
     }
