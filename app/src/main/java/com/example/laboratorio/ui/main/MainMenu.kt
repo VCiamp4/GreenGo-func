@@ -21,6 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.example.laboratorio.ui.store.StoreScreen
+import com.example.laboratorio.ui.ranking.RankingScreen
+
 
 @Composable
 fun MainMenu(
@@ -136,8 +138,8 @@ fun MainMenu(
                     }
 
                     MainTab.RANKING -> {
-                        // Por ahora lo dejamos igual
-                        HomeContent(state)
+                        // manda a la pantalla de ranking
+                        RankingScreen()
                     }
                 }
             }
