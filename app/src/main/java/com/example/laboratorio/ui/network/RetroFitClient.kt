@@ -1,5 +1,6 @@
 package com.example.laboratorio.ui.auth.network
 
+import com.example.laboratorio.ui.network.RankingApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -31,4 +32,9 @@ object RetrofitClient {
             .build()
             .create(AuthApiService::class.java)
     }
+
+    val rankingApi: RankingApiService by lazy {
+        Retrofit.Builder(RankingApiService::class.java)
+    }
+
 }

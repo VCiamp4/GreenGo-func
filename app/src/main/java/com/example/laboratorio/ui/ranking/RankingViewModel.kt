@@ -1,87 +1,45 @@
-package com.example.laboratorio.ui.ranking
+package com.example.laboratorio.ui.main.ranking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import com.example.laboratorio.ui.network.RetrofitClient
 import kotlinx.coroutines.launch
 
 class RankingViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        RankingUiState(isLoading = true)
-    )
-    val uiState: StateFlow<RankingUiState> = _uiState
+    var uiState = androidx.compose.runtime.mutableStateOf(RankingUiState())
+        private set
 
-    init {
-        reload()
-    }
+    fun loadRanking(
+        semanal: Boolean,
+        tipoResiduo: String? = null
+    ) {
+        uiState.value = uiState.value.copy(
+            isLoading = true,
+            errorMessage = null,
+            isSemanal = semanal,
+            tipoResiduo = tipoResiduo
+        )
 
-    fun changePeriod(period: RankingPeriod) {
-        _uiState.update { it.copy(period = period, isLoading = true) }
-        reload()
-    }
-
-    fun changeMode(mode: RankingMode) {
-        _uiState.update { it.copy(mode = mode, isLoading = true) }
-        reload()
-    }
-
-    fun changeResidue(residue: String) {
-        _uiState.update { it.copy(selectedResidue = residue, isLoading = true) }
-        reload()
-    }
-
-    private fun reload() {
         viewModelScope.launch {
-            delay(600)
+            try {
+                val result = if (semanal) {
+                    RetrofitClient.rankingApi.getRankingSemanal(tipoResiduo)
+                } else {
+                    RetrofitClient.rankingApi.getRankingGlobal(tipoResiduo)
+                }
 
-            val state = _uiState.value
+                uiState.value = uiState.value.copy(
+                    isLoading = false,
+                    entries = result
+                )
 
-            val data = when (state.mode) {
-                RankingMode.TOTAL_POINTS ->
-                    mockTotal(state.period)
-
-                RankingMode.BY_RESIDUE ->
-                    mockByResidue(state.period, state.selectedResidue)
-            }
-
-            _uiState.update {
-                it.copy(
-                    ranking = data,
-                    isLoading = false
+            } catch (e: Exception) {
+                uiState.value = uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "No se pudo cargar el ranking"
                 )
             }
         }
     }
-
-    private fun mockTotal(period: RankingPeriod): List<RankingEntry> =
-        (1..10).map {
-            RankingEntry(
-                position = it,
-                username = "Usuario$it",
-                points = if (period == RankingPeriod.GLOBAL)
-                    2000 - it * 120
-                else
-                    450 - it * 35
-            )
-        }
-
-    private fun mockByResidue(
-        period: RankingPeriod,
-        residue: String
-    ): List<RankingEntry> =
-        (1..10).map {
-            RankingEntry(
-                position = it,
-                username = "$residue-$it",
-                points = if (period == RankingPeriod.GLOBAL)
-                    900 - it * 40
-                else
-                    220 - it * 18,
-                residueType = residue
-            )
-        }
 }

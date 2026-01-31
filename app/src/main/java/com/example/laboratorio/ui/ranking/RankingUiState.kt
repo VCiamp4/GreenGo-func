@@ -1,13 +1,11 @@
-package com.example.laboratorio.ui.ranking
+package com.example.laboratorio.ui.main.ranking
 
-enum class RankingPeriod { GLOBAL, WEEKLY }
-enum class RankingMode { TOTAL_POINTS, BY_RESIDUE }
+import com.example.laboratorio.ui.network.models.RankingEntry
 
 data class RankingUiState(
     val isLoading: Boolean = false,
-    val period: RankingPeriod = RankingPeriod.GLOBAL,
-    val mode: RankingMode = RankingMode.TOTAL_POINTS,
-    val selectedResidue: String = "Plástico",
-    val ranking: List<RankingEntry> = emptyList(),
-    val errorMessage: String? = null
+    val entries: List<RankingEntry> = emptyList(),
+    val errorMessage: String? = null,
+    val tipoResiduo: String? = null,
+    val isSemanal: Boolean = false
 )

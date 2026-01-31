@@ -1,77 +1,58 @@
-package com.example.laboratorio.ui.store
+package com.example.laboratorio.ui.main.store
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.delay
+import com.example.laboratorio.ui.store.StoreItem
+import com.example.laboratorio.ui.store.StoreUiState
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 
-class StoreViewModel(
-    initialPoints: Int
-) : ViewModel() {
+class StoreViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         StoreUiState(
-            points = initialPoints,
+            points = 120, // 🔹 por ahora HARDCODEADO
             items = listOf(
                 StoreItem(
-                    id = 1,
-                    name = "Doble puntos",
+                    id = "boost_x2",
+                    name = "Booster x2",
                     description = "Duplica los puntos del próximo QR",
-                    cost = 100,
-                    icon = Icons.Filled.Bolt
+                    cost = 100
                 ),
                 StoreItem(
-                    id = 2,
-                    name = "Scan rápido",
-                    description = "Reduce el tiempo de escaneo",
-                    cost = 150,
-                    icon = Icons.Filled.Speed
-                ),
-                StoreItem(
-                    id = 3,
-                    name = "Bonus diario",
-                    description = "Gana +50 pts al iniciar sesión",
-                    cost = 200,
-                    icon = Icons.Filled.EmojiEvents
+                    id = "retry_qr",
+                    name = "Reintento QR",
+                    description = "Permite volver a escanear un QR fallido",
+                    cost = 50
                 )
             )
         )
     )
 
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<StoreUiState> = _uiState
 
-    fun buy(item: StoreItem) {
+    fun buyItem(item: StoreItem) {
         val state = _uiState.value
 
         if (state.points < item.cost) {
-            _uiState.update {
-                it.copy(errorMessage = "No tenés puntos suficientes")
-            }
+            _uiState.value = state.copy(
+                errorMessage = "No tenés puntos suficientes",
+                successMessage = null
+            )
             return
         }
 
-        _uiState.update { it.copy(isBuying = true) }
-
-        // simulamos compra
-        kotlinx.coroutines.GlobalScope.launch {
-            delay(800)
-            _uiState.update {
-                it.copy(
-                    points = it.points - item.cost,
-                    isBuying = false,
-                    successMessage = "Compraste ${item.name} 🎉"
-                )
-            }
-        }
+        // Compra válida
+        _uiState.value = state.copy(
+            points = state.points - item.cost,
+            successMessage = "Compraste ${item.name}",
+            errorMessage = null
+        )
     }
 
     fun clearMessages() {
-        _uiState.update {
-            it.copy(successMessage = null, errorMessage = null)
-        }
+        _uiState.value = _uiState.value.copy(
+            errorMessage = null,
+            successMessage = null
+        )
     }
 }
