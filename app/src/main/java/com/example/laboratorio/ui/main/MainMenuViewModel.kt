@@ -9,6 +9,7 @@ import com.example.laboratorio.ui.auth.network.ApiErrorResponse
 import com.example.laboratorio.ui.auth.network.ReclamarResiduoRequest
 import com.example.laboratorio.ui.auth.network.RetrofitClient
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 
 data class MainMenuUiState(
@@ -18,7 +19,6 @@ data class MainMenuUiState(
     val userId: Int? = null,
     val puntosTotales: Int = 0,
     val errorMessage: String? = null,
-    val qrCodeContent: String? = null,
     val reclamarMessage: String? = null,
     val reclamarError: String? = null,
     val categoria: String? = null,
@@ -31,8 +31,25 @@ class MainMenuViewModel : ViewModel() {
         private set
 
     fun onScanResult(result: String?) {
-        if (!result.isNullOrBlank()) {
-            reclamarResiduo(result)
+        val rawContent = result?.trim() ?: return
+        
+        var idToUse = rawContent
+
+        // Intentamos extraer el ID si el QR es un JSON (como muestra el log)
+        try {
+            val gson = Gson()
+            val mapType = object : TypeToken<Map<String, Any>>() {}.type
+            val data: Map<String, Any> = gson.fromJson(rawContent, mapType)
+            
+            if (data.containsKey("ID Residuo")) {
+                idToUse = data["ID Residuo"].toString()
+            }
+        } catch (e: Exception) {
+            // Si no es JSON o no tiene el campo, usamos el contenido original
+        }
+
+        if (idToUse.isNotBlank()) {
+            reclamarResiduo(idToUse)
         }
     }
 
@@ -51,21 +68,16 @@ class MainMenuViewModel : ViewModel() {
                         categoria = body?.categoria,
                         puntos = body?.puntos
                     )
-                    // Vuelve a cargar los datos del usuario para actualizar los puntos totales
                     loadUserData()
                 } else {
                     val errorBody = response.errorBody()?.string()
-                    var errorMessage = "Ocurrió un error inesperado."
+                    var errorMessage = "Error del servidor (Código ${response.code()})"
                     if (errorBody != null) {
                         try {
                             val errorResponse = Gson().fromJson(errorBody, ApiErrorResponse::class.java)
                             errorMessage = errorResponse.error
                         } catch (e: Exception) {
-                            errorMessage = when(response.code()) {
-                                400 -> "Error en la petición. El residuo puede haber sido reclamado."
-                                404 -> "Residuo no encontrado."
-                                else -> "Error del servidor."
-                            }
+                            errorMessage = "Respuesta del servidor: $errorBody"
                         }
                     }
                     uiState = uiState.copy(
@@ -77,7 +89,7 @@ class MainMenuViewModel : ViewModel() {
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     isClaiming = false,
-                    reclamarError = "Error de red. No se pudo conectar al servidor."
+                    reclamarError = "Error de conexión: ${e.message}"
                 )
             }
         }
@@ -111,8 +123,7 @@ class MainMenuViewModel : ViewModel() {
             reclamarMessage = null,
             reclamarError = null,
             categoria = null,
-            puntos = null,
-            qrCodeContent = null
+            puntos = null
         )
     }
 

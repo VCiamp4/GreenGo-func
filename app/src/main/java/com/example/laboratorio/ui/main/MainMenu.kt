@@ -154,7 +154,7 @@ private fun HomeContent(state: MainMenuUiState) {
         }
 
         else -> {
-            PointsCard(points = state.puntosTotales ?: 0)
+            PointsCard(points = state.puntosTotales)
             StreakCard(days = 5) // HARDCODEADO
             WeeklyProgressRow(doneCount = 5, total = 7) // HARDCODEADO
         }
