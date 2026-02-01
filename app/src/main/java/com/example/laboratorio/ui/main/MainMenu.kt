@@ -20,9 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import com.example.laboratorio.ui.store.StoreScreen
-import com.example.laboratorio.ui.ranking.RankingScreen
 
+// ✅ IMPORTS CORRECTOS
+import com.example.laboratorio.ui.main.store.StoreScreen
+import com.example.laboratorio.ui.main.ranking.RankingScreen
 
 @Composable
 fun MainMenu(
@@ -40,7 +41,7 @@ fun MainMenu(
         viewModel.loadUserData()
     }
 
-    // Dialog resultado de reclamar QR
+    // Dialog de resultado al reclamar QR
     if (state.reclamarMessage != null || state.reclamarError != null) {
         val isError = state.reclamarError != null
 
@@ -120,6 +121,7 @@ fun MainMenu(
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+
                 TopHeader(
                     username = state.username ?: "Usuario",
                     level = 5, // hardcodeado
@@ -128,9 +130,7 @@ fun MainMenu(
 
                 when (selectedTab) {
                     MainTab.STORE -> {
-                        StoreScreen(
-                            points = state.puntosTotales
-                        )
+                        StoreScreen()
                     }
 
                     MainTab.SCAN -> {
@@ -138,8 +138,7 @@ fun MainMenu(
                     }
 
                     MainTab.RANKING -> {
-                        // manda a la pantalla de ranking
-                        RankingScreen()
+                        RankingScreen(semanal = false)
                     }
                 }
             }
@@ -174,11 +173,7 @@ private fun HomeContent(state: MainMenuUiState) {
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Error",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFB00020)
-                    )
+                    Text("Error", fontWeight = FontWeight.SemiBold, color = Color(0xFFB00020))
                     Spacer(Modifier.height(6.dp))
                     Text(state.errorMessage)
                 }
@@ -219,11 +214,7 @@ private fun TopHeader(
             Spacer(Modifier.width(10.dp))
 
             Column {
-                Text(
-                    "¡Hola, $username!",
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text("¡Hola, $username!", color = Color.White, fontWeight = FontWeight.SemiBold)
                 Text(
                     "Nivel $level",
                     color = Color.White.copy(alpha = 0.85f),
@@ -267,24 +258,10 @@ private fun PointsCard(points: Int) {
             modifier = Modifier.padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF15A37A)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Autorenew, null, tint = Color.White)
-            }
-
-            Spacer(Modifier.height(10.dp))
-
+            Icon(Icons.Filled.Autorenew, null, tint = Color(0xFF0F8C6E))
+            Spacer(Modifier.height(8.dp))
             Text("Puntos totales")
-            Text(
-                "$points pts",
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F8C6E)
-            )
+            Text("$points pts", fontWeight = FontWeight.Bold, color = Color(0xFF0F8C6E))
         }
     }
 }
@@ -296,10 +273,7 @@ private fun StreakCard(days: Int) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.LocalFireDepartment, null, tint = Color(0xFFF97316))
             Spacer(Modifier.width(10.dp))
             Text("$days días consecutivos")

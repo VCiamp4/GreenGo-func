@@ -8,10 +8,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // Emulador Android → tu PC
     private const val BASE_URL = "http://10.0.2.2:8000/"
 
-    //ip computadora grego para prueba en telefono fisico private const val BASE_URL = "http://163.10.143.35:8000/"
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -24,17 +22,19 @@ object RetrofitClient {
             .build()
     }
 
-    val authApi: AuthApiService by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .client(okHttpClient)
             .build()
-            .create(AuthApiService::class.java)
+    }
+
+    val authApi: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
     }
 
     val rankingApi: RankingApiService by lazy {
-        Retrofit.Builder(RankingApiService::class.java)
+        retrofit.create(RankingApiService::class.java)
     }
-
 }

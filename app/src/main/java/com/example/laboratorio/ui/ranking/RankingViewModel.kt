@@ -2,7 +2,7 @@ package com.example.laboratorio.ui.main.ranking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.laboratorio.ui.network.RetrofitClient
+import com.example.laboratorio.ui.auth.network.RetrofitClient
 import kotlinx.coroutines.launch
 
 class RankingViewModel : ViewModel() {
