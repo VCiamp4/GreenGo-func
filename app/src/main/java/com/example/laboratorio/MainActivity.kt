@@ -1,6 +1,7 @@
 package com.example.laboratorio
 
 import android.os.Bundle
+import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
@@ -10,10 +11,17 @@ import com.example.laboratorio.ui.login.LoginScreen
 import com.example.laboratorio.ui.main.MainMenu
 import com.example.laboratorio.ui.theme.LaboratorioTheme
 import com.example.laboratorio.ui.signup.SignUpScreen
+import org.osmdroid.config.Configuration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val ctx = applicationContext
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
+        // El userAgent debe ser el ID de tu app
+        Configuration.getInstance().userAgentValue = packageName
+
         setContent {
             LaboratorioTheme {
                 AppEntry()

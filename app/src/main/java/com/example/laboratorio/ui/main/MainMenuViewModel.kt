@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.laboratorio.ui.auth.network.ApiErrorResponse
 import com.example.laboratorio.ui.auth.network.ReclamarResiduoRequest
 import com.example.laboratorio.ui.auth.network.RetrofitClient
+import com.example.laboratorio.ui.network.Estacion
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ data class MainMenuUiState(
     val isLoading: Boolean = false,
     val isClaiming: Boolean = false,
     val username: String? = null,
+    val listaEstaciones: List<Estacion> = emptyList(),
     val userId: Int? = null,
     val puntosTotales: Int = 0,
     val errorMessage: String? = null,
@@ -118,6 +120,23 @@ class MainMenuViewModel : ViewModel() {
         }
     }
 
+    fun loadEstaciones() {
+        viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true)
+            try {
+                val estaciones = RetrofitClient.authApi.estaciones()
+                uiState = uiState.copy(
+                    listaEstaciones = estaciones,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    errorMessage = "Error al cargar estaciones",
+                    isLoading = false
+                )
+            }
+        }
+    }
     fun clearReclamarStatus() {
         uiState = uiState.copy(
             reclamarMessage = null,

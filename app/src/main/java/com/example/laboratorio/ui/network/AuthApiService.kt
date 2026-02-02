@@ -4,6 +4,10 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
+
+import com.example.laboratorio.ui.network.Estacion
+
 
 interface AuthApiService {
 
@@ -26,4 +30,12 @@ interface AuthApiService {
 
     @POST("/api/residuo/reclamar/")
     suspend fun reclamarResiduo(@Body request: ReclamarResiduoRequest): Response<ReclamarResiduoResponse>
+
+    @GET("/api/estaciones/")
+    suspend fun estaciones(): List<Estacion>
+
+    @GET("/api/estaciones/{id}")
+    suspend fun getEstacionDetalle(@Path("id") id: Int): Estacion
+
+
 }

@@ -5,10 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.ui.auth.network.ApiErrorResponse
 import com.example.laboratorio.ui.auth.network.RetrofitClient
 import com.example.laboratorio.ui.auth.network.SignUpRequest
 import com.example.laboratorio.ui.auth.network.TokenStore
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class SignUpViewModel : ViewModel() {
 
@@ -60,18 +63,32 @@ class SignUpViewModel : ViewModel() {
                     )
                 )
 
-
                 TokenStore.setTokens(access = response.access, refresh = response.refresh)
-
                 uiState = uiState.copy(isLoading = false)
-
-
                 onSuccess(uiState.username)
 
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                var errorMessage = "Error del servidor (${e.code()})"
+                
+                if (errorBody != null) {
+                    try {
+
+                        val errorResponse = Gson().fromJson(errorBody, ApiErrorResponse::class.java)
+                        errorMessage = errorResponse.error
+                    } catch (jsonException: Exception) {
+                        errorMessage = errorBody
+                    }
+                }
+                
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = errorMessage
+                )
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "No se pudo crear la cuenta (usuario inválido o ya existe)"
+                    errorMessage = "Error de red: ${e.message}"
                 )
             }
         }

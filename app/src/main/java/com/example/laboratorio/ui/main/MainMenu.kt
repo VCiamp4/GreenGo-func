@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-
+import com.example.laboratorio.ui.network.Estacion
 @Composable
 fun MainMenu(
     onLogout: () -> Unit,
@@ -111,7 +111,18 @@ fun MainMenu(
 
                 when (selectedTab) {
                     MainTab.STORE -> HomeContent(state)
-                    MainTab.SCAN -> HomeContent(state)
+                    MainTab.SCAN -> {
+                        LaunchedEffect(Unit) {
+                            viewModel.loadEstaciones()
+                        }
+
+                        if (state.isLoading) {
+                            CircularProgressIndicator(color = Color.White)
+                        } else {
+                            // Ahora 'listaEstaciones' ya no debería estar en rojo
+                            MapaOsmContent(estaciones = state.listaEstaciones)
+                        }
+                    }
                     MainTab.RANKING -> HomeContent(state)
                 }
             }
