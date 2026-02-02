@@ -1,4 +1,4 @@
-package com.example.laboratorio.ui.main.ranking
+package com.example.laboratorio.ui.ranking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,35 +7,52 @@ import kotlinx.coroutines.launch
 
 class RankingViewModel : ViewModel() {
 
-    var uiState = androidx.compose.runtime.mutableStateOf(RankingUiState())
+    var uiState = RankingUiState()
         private set
 
-    fun loadRanking(
-        semanal: Boolean,
-        tipoResiduo: String? = null
-    ) {
-        uiState.value = uiState.value.copy(
-            isLoading = true,
-            errorMessage = null,
-            isSemanal = semanal,
-            tipoResiduo = tipoResiduo
-        )
+    init {
+        loadRanking()
+    }
+
+    fun setPeriod(period: RankingPeriod) {
+        uiState = uiState.copy(period = period)
+        loadRanking()
+    }
+
+    fun setMode(mode: RankingMode) {
+        uiState = uiState.copy(mode = mode)
+        loadRanking()
+    }
+
+    private fun loadRanking() {
+        uiState = uiState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
             try {
-                val result = if (semanal) {
-                    RetrofitClient.rankingApi.getRankingSemanal(tipoResiduo)
-                } else {
-                    RetrofitClient.rankingApi.getRankingGlobal(tipoResiduo)
+                val response = when (uiState.period) {
+                    RankingPeriod.GLOBAL ->
+                        RetrofitClient.rankingApi.getRanking(
+                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUE) "Plastico" else null
+                        )
+
+                    RankingPeriod.WEEKLY ->
+                        RetrofitClient.rankingApi.getWeeklyRanking(
+                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUE) "Plastico" else null
+                        )
                 }
 
-                uiState.value = uiState.value.copy(
+                uiState = uiState.copy(
                     isLoading = false,
-                    entries = result
+                    items = response.map {
+                        RankingUser(
+                            username = it.username,
+                            points = it.puntos
+                        )
+                    }
                 )
 
             } catch (e: Exception) {
-                uiState.value = uiState.value.copy(
+                uiState = uiState.copy(
                     isLoading = false,
                     errorMessage = "No se pudo cargar el ranking"
                 )

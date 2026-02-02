@@ -18,12 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.laboratorio.ui.main.MainMenuViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
-// ✅ IMPORTS CORRECTOS
-import com.example.laboratorio.ui.main.store.StoreScreen
-import com.example.laboratorio.ui.main.ranking.RankingScreen
+
+import com.example.laboratorio.ui.store.StoreScreen
+import com.example.laboratorio.ui.ranking.RankingScreen
 
 @Composable
 fun MainMenu(
@@ -130,7 +131,9 @@ fun MainMenu(
 
                 when (selectedTab) {
                     MainTab.STORE -> {
-                        StoreScreen()
+                        StoreScreen(
+                            onBack = { selectedTab = MainTab.SCAN }
+                        )
                     }
 
                     MainTab.SCAN -> {
@@ -138,7 +141,9 @@ fun MainMenu(
                     }
 
                     MainTab.RANKING -> {
-                        RankingScreen(semanal = false)
+                        RankingScreen(
+                            onBack = { selectedTab = MainTab.SCAN }
+                        )
                     }
                 }
             }

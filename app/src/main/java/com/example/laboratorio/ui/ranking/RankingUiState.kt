@@ -1,11 +1,13 @@
-package com.example.laboratorio.ui.main.ranking
-
-import com.example.laboratorio.ui.network.models.RankingEntry
+package com.example.laboratorio.ui.ranking
 
 data class RankingUiState(
+    val period: RankingPeriod = RankingPeriod.GLOBAL,
+    val mode: RankingMode = RankingMode.POINTS,
+
     val isLoading: Boolean = false,
-    val entries: List<RankingEntry> = emptyList(),
     val errorMessage: String? = null,
-    val tipoResiduo: String? = null,
-    val isSemanal: Boolean = false
+
+    val items: List<RankingUser> = emptyList()
 )
+
+

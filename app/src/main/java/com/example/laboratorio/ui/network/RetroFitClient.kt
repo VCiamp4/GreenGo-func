@@ -35,6 +35,11 @@ object RetrofitClient {
     }
 
     val rankingApi: RankingApiService by lazy {
-        retrofit.create(RankingApiService::class.java)
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
+            .build()
+            .create(RankingApiService::class.java)
     }
 }
