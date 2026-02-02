@@ -1,11 +1,15 @@
 package com.example.laboratorio
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.laboratorio.ui.auth.network.TokenStore
 import com.example.laboratorio.ui.login.LoginScreen
 import com.example.laboratorio.ui.main.MainMenu
@@ -22,13 +26,33 @@ class MainActivity : ComponentActivity() {
         // El userAgent debe ser el ID de tu app
         Configuration.getInstance().userAgentValue = packageName
 
+        checkLocationPermissions()
+
         setContent {
             LaboratorioTheme {
                 AppEntry()
             }
         }
     }
+
+    private fun checkLocationPermissions() {
+        val permissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        val notGranted = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (notGranted.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, notGranted.toTypedArray(), 0)
+        }
+    }
+
 }
+
+
 
 @Composable
 fun AppEntry() {

@@ -1,5 +1,6 @@
 package com.example.laboratorio.ui.main
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,7 +12,16 @@ import com.example.laboratorio.ui.auth.network.RetrofitClient
 import com.example.laboratorio.ui.network.Estacion
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.osmdroid.config.Configuration
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.bonuspack.routing.OSRMRoadManager
+import org.osmdroid.bonuspack.routing.Road
+import org.osmdroid.bonuspack.routing.RoadManager
+import org.osmdroid.views.overlay.Polyline
+
 
 data class MainMenuUiState(
     val isLoading: Boolean = false,
@@ -24,7 +34,11 @@ data class MainMenuUiState(
     val reclamarMessage: String? = null,
     val reclamarError: String? = null,
     val categoria: String? = null,
-    val puntos: Int? = null
+    val puntos: Int? = null,
+    val roadOverlay: Polyline? = null,
+    val distanciaRuta: String? = null,
+    val tiempoRuta: String? = null,
+
 )
 
 class MainMenuViewModel : ViewModel() {
@@ -93,6 +107,31 @@ class MainMenuViewModel : ViewModel() {
                     isClaiming = false,
                     reclamarError = "Error de conexión: ${e.message}"
                 )
+            }
+        }
+    }
+
+    fun calcularRuta(context: Context, inicio: GeoPoint, fin: GeoPoint) {
+        viewModelScope.launch(Dispatchers.IO) {
+
+            val roadManager = OSRMRoadManager(context, context.packageName)
+            roadManager.setMean(OSRMRoadManager.MEAN_BY_FOOT)
+
+            val waypoints = arrayListOf(inicio, fin)
+            val road = roadManager.getRoad(waypoints)
+
+            if (road.mStatus == Road.STATUS_OK) {
+                val polyline = RoadManager.buildRoadOverlay(road)
+                polyline.outlinePaint.color = android.graphics.Color.parseColor("#10B981")
+                polyline.outlinePaint.strokeWidth = 12f
+
+                withContext(Dispatchers.Main) {
+                    uiState = uiState.copy(
+                        roadOverlay = polyline,
+                        distanciaRuta = "A ${String.format("%.2f", road.mLength)} km",
+                        tiempoRuta = "Llegas en ${Math.round(road.mDuration / 60)} min"
+                    )
+                }
             }
         }
     }

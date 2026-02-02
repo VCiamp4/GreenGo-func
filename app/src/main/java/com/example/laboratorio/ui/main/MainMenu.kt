@@ -30,6 +30,10 @@ fun MainMenu(
 
     var selectedTab by remember { mutableStateOf(MainTab.SCAN) }
 
+    var showMap by remember { mutableStateOf(false) }
+
+
+
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         viewModel.onScanResult(result.contents)
     }
@@ -110,22 +114,89 @@ fun MainMenu(
                 )
 
                 when (selectedTab) {
-                    MainTab.STORE -> HomeContent(state)
-                    MainTab.SCAN -> {
-                        LaunchedEffect(Unit) {
-                            viewModel.loadEstaciones()
-                        }
+                    MainTab.STORE -> {
+                        Text("Pantalla de Tienda/Canje", color = Color.White)
+                    }
 
-                        if (state.isLoading) {
-                            CircularProgressIndicator(color = Color.White)
+                    MainTab.RANKING -> {
+                        Text("Pantalla de Ranking", color = Color.White)
+                    }
+
+                    MainTab.SCAN -> {
+                        if (!showMap) {
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                HomeContent(state)
+
+                                Button(
+                                    onClick = { showMap = true },
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(
+                                            0xFF15A37A
+                                        )
+                                    )
+                                ) {
+                                    Icon(Icons.Filled.Map, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Ver estaciones de reciclaje")
+                                }
+                            }
                         } else {
-                            // Ahora 'listaEstaciones' ya no debería estar en rojo
-                            MapaOsmContent(estaciones = state.listaEstaciones)
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Mapa de Estaciones",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    IconButton(onClick = { showMap = false }) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = "Cerrar",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+
+                                LaunchedEffect(Unit) {
+                                    viewModel.loadEstaciones()
+                                }
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    shape = RoundedCornerShape(18.dp)
+                                ) {
+                                    MapaOsmContent(estaciones = state.listaEstaciones, viewModel)
+                                }
+                                if (state.distanciaRuta != null) {
+                                    Surface(
+                                        color = Color.Black.copy(alpha = 0.7f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.padding(12.dp)
+                                    ) {
+                                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.DirectionsWalk, contentDescription = null, tint = Color.White)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = "${state.distanciaRuta} • ${state.tiempoRuta}",
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+                                    }
+                                }
+
+                            }
                         }
                     }
-                    MainTab.RANKING -> HomeContent(state)
                 }
             }
+        }
 
             // Overlay cuando está reclamando QR/puntos
             if (state.isClaiming) {
@@ -139,8 +210,8 @@ fun MainMenu(
                 }
             }
         }
-    }
 }
+
 
 @Composable
 private fun HomeContent(state: MainMenuUiState) {
@@ -419,25 +490,30 @@ private fun BottomBar(
         NavigationBarItem(
             selected = selected == MainTab.SCAN,
             onClick = {
-                onSelect(MainTab.SCAN)
-                onScanClick()
+                if (selected == MainTab.SCAN) {
+                    // Si ya estoy en la Home, abro la cámara para sumar puntos (PoC)
+                    onScanClick()
+                } else {
+                    // Si estoy en otra pestaña, vuelvo a la pantalla principal
+                    onSelect(MainTab.SCAN)
+                }
             },
             icon = {
                 Box(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF10B981)),
+                        .background(if (selected == MainTab.SCAN) Color(0xFF10B981) else Color.Gray),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.QrCodeScanner,
+                        imageVector = if (selected == MainTab.SCAN) Icons.Filled.QrCodeScanner else Icons.Filled.Home,
                         contentDescription = null,
                         tint = Color.White
                     )
                 }
             },
-            label = { Text("Escanear") },
+            label = { Text(if (selected == MainTab.SCAN) "Escanear" else "Inicio") },
             alwaysShowLabel = true
         )
 
