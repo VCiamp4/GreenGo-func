@@ -1,9 +1,5 @@
 package com.example.laboratorio.ui.auth.network
 
-/**
- * Modelos para la autenticación y perfil de usuario.
- */
-
 data class LoginRequest(
     val username: String,
     val password: String
@@ -41,3 +37,4 @@ data class DatosUsuarioResponse(
     val username: String,
     val puntos_totales: Int
 )
+

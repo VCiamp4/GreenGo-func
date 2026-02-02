@@ -1,5 +1,6 @@
 package com.example.laboratorio.ui.auth.network
 
+import com.example.laboratorio.ui.network.model.ReclamarResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -38,4 +39,8 @@ interface AuthApiService {
     suspend fun getEstacionDetalle(@Path("id") id: Int): Estacion
 
 
+    @POST("api/reclamar_residuo/")
+    suspend fun reclamarResiduo(
+        @Body request: Map<String, String>
+    ): ReclamarResponse
 }

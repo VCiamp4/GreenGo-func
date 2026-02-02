@@ -1,5 +1,6 @@
 package com.example.laboratorio.ui.auth.network
 
+import com.example.laboratorio.ui.network.RankingApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -7,8 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // Emulador Android → tu PC
-    //private const val BASE_URL = "http://10.0.2.2:8000/"
 
     //ip computadora grego para prueba en telefono fisico
     private const val BASE_URL = "http://192.168.0.112:8000/"
@@ -24,12 +23,19 @@ object RetrofitClient {
             .build()
     }
 
-    val authApi: AuthApiService by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .client(okHttpClient)
             .build()
-            .create(AuthApiService::class.java)
+    }
+
+    val authApi: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
+    }
+
+    val rankingApi: RankingApiService by lazy {
+        retrofit.create(RankingApiService::class.java)
     }
 }
