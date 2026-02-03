@@ -1,13 +1,13 @@
 package com.example.laboratorio.ui.ranking
 
-data class RankingUiState(
-    val period: RankingPeriod = RankingPeriod.GLOBAL,
-    val mode: RankingMode = RankingMode.POINTS,
+import com.example.laboratorio.ui.ranking.RankingItem
 
+data class RankingUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-
-    val items: List<RankingUser> = emptyList()
+    val items: List<RankingItem> = emptyList(),
+    val period: RankingPeriod = RankingPeriod.GLOBAL,
+    val mode: RankingMode = RankingMode.PUNTOS,
+    val selectedResidue: String? = null
 )
-
 

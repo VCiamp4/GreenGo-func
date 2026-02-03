@@ -1,62 +1,76 @@
 package com.example.laboratorio.ui.ranking
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio.ui.auth.network.RetrofitClient
+import com.example.laboratorio.ui.auth.network.RetrofitClient.rankingApi
 import kotlinx.coroutines.launch
+import com.example.laboratorio.ui.network.RankingApiService
 
-class RankingViewModel : ViewModel() {
 
-    var uiState = RankingUiState()
+class RankingViewModel(
+    private val rankingApi: RankingApiService = RetrofitClient.rankingApi
+) : ViewModel() {
+
+    var uiState by mutableStateOf(RankingUiState())
         private set
 
-    init {
-        loadRanking()
+
+    fun setMode(mode: RankingMode) {
+        if (uiState.mode == mode) return
+        uiState = uiState.copy(mode = mode)
     }
+
+    fun setResiduo(residuo: String?) {
+        uiState = uiState.copy(selectedResidue = residuo)
+    }
+
 
     fun setPeriod(period: RankingPeriod) {
         uiState = uiState.copy(period = period)
-        loadRanking()
     }
 
-    fun setMode(mode: RankingMode) {
-        uiState = uiState.copy(mode = mode)
-        loadRanking()
-    }
 
-    private fun loadRanking() {
-        uiState = uiState.copy(isLoading = true, errorMessage = null)
-
+    fun loadRanking() {
         viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
             try {
-                val response = when (uiState.period) {
+                val result = when (uiState.period) {
                     RankingPeriod.GLOBAL ->
-                        RetrofitClient.rankingApi.getRanking(
-                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUE) "Plastico" else null
+                        rankingApi.getRankingGlobal(
+                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUO)
+                                uiState.selectedResidue
+                            else null
                         )
 
-                    RankingPeriod.WEEKLY ->
-                        RetrofitClient.rankingApi.getWeeklyRanking(
-                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUE) "Plastico" else null
+                    RankingPeriod.SEMANAL ->
+                        rankingApi.getRankingSemanal(
+                            tipoResiduo = if (uiState.mode == RankingMode.RESIDUO)
+                                uiState.selectedResidue
+                            else null
                         )
                 }
 
+                // 🔥 CLAVE: nueva referencia
                 uiState = uiState.copy(
                     isLoading = false,
-                    items = response.map {
-                        RankingUser(
-                            username = it.username,
-                            points = it.puntos
-                        )
-                    }
+                    items = result
                 )
 
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = "No se pudo cargar el ranking"
+                    errorMessage = "Error cargando ranking"
                 )
             }
         }
     }
+
+
+
 }
+

@@ -1,24 +1,18 @@
 package com.example.laboratorio.ui.network
 
+import com.example.laboratorio.ui.ranking.RankingItem
 import retrofit2.http.GET
 import retrofit2.http.Query
-
-data class RankingUserDto(
-    val user_id: Int,
-    val username: String,
-    val puntos: Int
-)
 
 interface RankingApiService {
 
     @GET("api/ranking/")
-    suspend fun getRanking(
+    suspend fun getRankingGlobal(
         @Query("tipo_residuo") tipoResiduo: String? = null
-    ): List<RankingUserDto>
+    ): List<RankingItem>
 
     @GET("api/ranking/semanal/")
-    suspend fun getWeeklyRanking(
+    suspend fun getRankingSemanal(
         @Query("tipo_residuo") tipoResiduo: String? = null
-    ): List<RankingUserDto>
+    ): List<RankingItem>
 }
-

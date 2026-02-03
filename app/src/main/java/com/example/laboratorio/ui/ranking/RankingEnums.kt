@@ -2,15 +2,10 @@ package com.example.laboratorio.ui.ranking
 
 enum class RankingPeriod(val label: String) {
     GLOBAL("Global"),
-    WEEKLY("Semanal")
+    SEMANAL("Semanal")
 }
 
 enum class RankingMode {
-    POINTS,
-    RESIDUE
+    PUNTOS,
+    RESIDUO
 }
-
-data class RankingUser(
-    val username: String,
-    val points: Int
-)

@@ -1,5 +1,6 @@
 package com.example.laboratorio.ui.ranking
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +23,18 @@ fun RankingScreen(
     viewModel: RankingViewModel = viewModel()
 ) {
     val state = viewModel.uiState
+
+    LaunchedEffect(
+        state.period,
+        state.mode,
+        state.selectedResidue
+    ) {
+        Log.d(
+            "RANKING_EFFECT",
+            "Effect triggered: ${state.period}, ${state.mode}, ${state.selectedResidue}"
+        )
+        viewModel.loadRanking()
+    }
 
     Column(
         modifier = Modifier
@@ -56,9 +69,9 @@ fun RankingScreen(
 
         /* ---------- TABS GLOBAL / SEMANAL ---------- */
         TabRow(selectedTabIndex = state.period.ordinal) {
-            RankingPeriod.values().forEachIndexed { index, period ->
+            RankingPeriod.values().forEach { period ->
                 Tab(
-                    selected = state.period.ordinal == index,
+                    selected = state.period == period,
                     onClick = { viewModel.setPeriod(period) },
                     text = { Text(period.label) }
                 )
@@ -67,7 +80,7 @@ fun RankingScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        /* ---------- FILTRO POR TIPO ---------- */
+        /* ---------- FILTRO ---------- */
         Row(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -75,13 +88,13 @@ fun RankingScreen(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             FilterChip(
-                selected = state.mode == RankingMode.POINTS,
-                onClick = { viewModel.setMode(RankingMode.POINTS) },
+                selected = state.mode == RankingMode.PUNTOS,
+                onClick = { viewModel.setMode(RankingMode.PUNTOS) },
                 label = { Text("Puntos") }
             )
             FilterChip(
-                selected = state.mode == RankingMode.RESIDUE,
-                onClick = { viewModel.setMode(RankingMode.RESIDUE) },
+                selected = state.mode == RankingMode.RESIDUO,
+                onClick = { viewModel.setMode(RankingMode.RESIDUO) },
                 label = { Text("Por residuo") }
             )
         }
@@ -91,13 +104,19 @@ fun RankingScreen(
         /* ---------- LISTA ---------- */
         when {
             state.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
 
             state.errorMessage != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(state.errorMessage, color = Color.Red)
                 }
             }
@@ -112,7 +131,7 @@ fun RankingScreen(
                         RankingItem(
                             position = index + 1,
                             username = user.username,
-                            points = user.points
+                            points = user.totalPuntos
                         )
                     }
                 }
