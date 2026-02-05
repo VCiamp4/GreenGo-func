@@ -16,6 +16,7 @@ import com.example.laboratorio.ui.main.MainMenu
 import com.example.laboratorio.ui.theme.LaboratorioTheme
 import com.example.laboratorio.ui.signup.SignUpScreen
 import org.osmdroid.config.Configuration
+import com.example.laboratorio.ui.achievements.AchievementsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,16 +62,29 @@ fun AppEntry() {
     var userEmail by rememberSaveable { mutableStateOf("") }
     var showSignUp by rememberSaveable { mutableStateOf(false) }
 
+    // 1. NUEVO ESTADO: Controla si se ve la pantalla de logros
+    var showAchievements by rememberSaveable { mutableStateOf(false) }
+
     when {
+        // 2. Si showAchievements es true, mostramos esa pantalla
+        showAchievements -> {
+            AchievementsScreen(
+                onBack = { showAchievements = false } // Al volver, ocultamos logros y regresa al MainMenu
+            )
+        }
+
         isLoggedIn -> {
             MainMenu(
                 onLogout = {
                     TokenStore.clear()
                     isLoggedIn = false
+                },
+                // 3. Pasamos la acción para activar el estado de logros
+                onAchievementsClick = {
+                    showAchievements = true
                 }
             )
         }
-
 
         showSignUp -> {
             SignUpScreen(

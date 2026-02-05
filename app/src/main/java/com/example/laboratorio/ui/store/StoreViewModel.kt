@@ -1,58 +1,93 @@
 package com.example.laboratorio.ui.main.store
 
 import androidx.lifecycle.ViewModel
-import com.example.laboratorio.ui.store.StoreItem
-import com.example.laboratorio.ui.store.StoreUiState
+import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.ui.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+
+// Asegúrate de que tu data class tenga el campo isOwned
+data class StoreItem(
+    val id: String,
+    val name: String,
+    val description: String,
+    val cost: Int,
+    val isOwned: Boolean = false
+)
+
+data class StoreUiState(
+    val points: Int = 0,
+    val items: List<StoreItem> = emptyList(),
+    val successMessage: String? = null,
+    val errorMessage: String? = null
+)
 
 class StoreViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        StoreUiState(
-            points = 120, // 🔹 por ahora HARDCODEADO
-            items = listOf(
-                StoreItem(
-                    id = "boost_x2",
-                    name = "Booster x2",
-                    description = "Duplica los puntos del próximo QR",
-                    cost = 100
-                ),
-                StoreItem(
-                    id = "retry_qr",
-                    name = "Reintento QR",
-                    description = "Permite volver a escanear un QR fallido",
-                    cost = 50
-                )
-            )
-        )
-    )
-
+    private val _uiState = MutableStateFlow(StoreUiState())
     val uiState: StateFlow<StoreUiState> = _uiState
 
-    fun buyItem(item: StoreItem) {
-        val state = _uiState.value
+    // Definimos los productos "base" aquí
+    private val baseItems = listOf(
+        // Consumibles (Siempre se pueden comprar, isOwned siempre será false)
+        StoreItem("boost_x2", "Booster de Puntos 2x", "Duplica tus puntos por cada reciclaje (1 hora).", 150),
+        StoreItem("protector_racha", "Protector de Racha", "Evita que tu racha se reinicie si olvidas reciclar un día.", 350),
+        StoreItem("estrella_suerte", "Estrella de la Suerte", "Aumenta la probabilidad de obtener logros raros (7 días).", 400),
 
-        if (state.points < item.cost) {
-            _uiState.value = state.copy(
-                errorMessage = "No tenés puntos suficientes",
-                successMessage = null
-            )
+        // Logros (Se compran una sola vez)
+        StoreItem("shop_novato", "Logro Comprador Novato", "Desbloquea instantáneamente la insignia.", 200),
+        StoreItem("shop_compulsivo", "Logro Comprador Compulsivo", "Desbloquea instantáneamente la insignia.", 500),
+        StoreItem("shop_coleccionista", "Logro Coleccionista", "Desbloquea instantáneamente la insignia.", 750)
+    )
+
+    init {
+
+        viewModelScope.launch {
+            combine(
+                UserRepository.userPoints,
+                UserRepository.unlockedAchievements
+            ) { points, unlockedIds ->
+
+                val updatedItems = baseItems.map { item ->
+                    // Si el ID del item está en la lista de desbloqueados, isOwned = true
+                    item.copy(isOwned = unlockedIds.contains(item.id))
+                }
+
+                StoreUiState(points = points, items = updatedItems)
+            }.collect { newState ->
+
+                _uiState.value = newState.copy(
+                    successMessage = _uiState.value.successMessage,
+                    errorMessage = _uiState.value.errorMessage
+                )
+            }
+        }
+    }
+
+    fun buyItem(item: StoreItem) {
+        // Validación extra: No permitir comprar si ya lo tiene
+        if (item.isOwned) return
+
+        val currentPoints = UserRepository.userPoints.value
+
+        if (currentPoints < item.cost) {
+            _uiState.value = _uiState.value.copy(errorMessage = "No tenés puntos suficientes", successMessage = null)
             return
         }
 
-        // Compra válida
-        _uiState.value = state.copy(
-            points = state.points - item.cost,
-            successMessage = "Compraste ${item.name}",
-            errorMessage = null
-        )
-    }
+        // Proceder con la compra
+        UserRepository.deductPoints(item.cost)
 
-    fun clearMessages() {
+        // Si es un logro, desbloquearlo
+        if (item.id.startsWith("shop_")) {
+            UserRepository.unlockAchievement(item.id)
+        }
+
         _uiState.value = _uiState.value.copy(
-            errorMessage = null,
-            successMessage = null
+            successMessage = "¡Comprado: ${item.name}!",
+            errorMessage = null
         )
     }
 }

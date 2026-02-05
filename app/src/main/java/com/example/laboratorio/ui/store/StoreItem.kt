@@ -6,6 +6,7 @@ data class StoreItem(
     val id: String,
     val name: String,
     val description: String,
-    val cost: Int
+    val cost: Int,
+    val isOwned: Boolean = false
 )
 
