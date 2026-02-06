@@ -1,5 +1,10 @@
 package com.example.laboratorio.ui.ranking
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,34 +46,28 @@ fun RankingScreen(
 ) {
     val state = viewModel.uiState
 
-    // TODO: Reemplaza esto con el usuario real de tu Auth/ViewModel
+    // Determinamos la unidad visualmente
+    val unitSuffix = if (state.mode == RankingMode.RESIDUO) "kg" else "pts"
+
+    // TODO: Reemplaza esto con el usuario real
     val currentUsername = "sciamparella"
 
-    // Lógica para encontrar tu posición y puntos reales en la lista cargada
+    // Buscamos tu usuario en la lista
     val myUserIndex = state.items.indexOfFirst { it.username == currentUsername }
     val myUserItem = state.items.getOrNull(myUserIndex)
-
     val myRank = if (myUserIndex >= 0) myUserIndex + 1 else 0
     val myPoints = myUserItem?.totalPuntos ?: 0
-
-    LaunchedEffect(state.period, state.mode) {
-        viewModel.loadRanking()
-    }
 
     Scaffold(
         containerColor = BackgroundColor
     ) { padding ->
-        // SOLUCIÓN 1: Quitamos el padding del Box padre para que el verde llegue arriba
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-            // .padding(padding) <--- ESTO SE QUITÓ PARA ELIMINAR LA BARRA BLANCA
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+
             // Fondo superior verde (Curvo)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(350.dp) // Un poco más alto para cubrir bien
+                    .height(380.dp)
                     .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
                     .background(
                         Brush.verticalGradient(
@@ -77,10 +76,8 @@ fun RankingScreen(
                     )
             )
 
-            // Contenido Scrollable
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                // Aplicamos el padding aquí para que el contenido no quede tapado por la navbar abajo
                 contentPadding = PaddingValues(
                     top = padding.calculateTopPadding(),
                     bottom = 20.dp
@@ -90,55 +87,145 @@ fun RankingScreen(
                 item {
                     HeaderSection(onBack)
 
-                    // SOLUCIÓN 2: Pasamos los datos calculados dinámicamente
                     MyPositionCard(
                         position = myRank,
                         username = currentUsername,
                         points = myPoints,
-                        level = 5, // Si tienes nivel en el objeto User, úsalo aquí: myUserItem?.level ?: 1
-                        streakDays = 12 // Lo mismo para racha
+                        suffix = unitSuffix,
+                        level = 5,
+                        streakDays = 12
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                // 2. Tabs (Global / Semanal / Amigos)
+                // 2. Tabs de Periodo (Global / Semanal)
                 item {
                     CustomSegmentedControl(
                         currentPeriod = state.period,
                         onPeriodSelected = { viewModel.setPeriod(it) }
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // 3. Podio (Top 3)
+                // 3. Filtros de Modo y Material (DISEÑO MEJORADO)
+                item {
+                    FilterSection(
+                        currentMode = state.mode,
+                        currentResidue = state.selectedResidue,
+                        onModeSelected = { mode ->
+                            viewModel.setMode(mode)
+                        },
+                        onResidueSelected = { residue ->
+                            viewModel.setResiduo(residue)
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                // 4. Podio (Top 3)
                 if (!state.isLoading && state.items.isNotEmpty()) {
                     item {
-                        PodiumSection(topThree = state.items.take(3))
+                        PodiumSection(
+                            topThree = state.items.take(3),
+                            suffix = unitSuffix
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
-                // 4. Lista del resto (Del 4 en adelante)
+                // 5. Lista del resto
                 if (state.isLoading) {
                     item {
                         Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = GreenPrimary)
+                            CircularProgressIndicator(color = Color.White) // Blanco para que se vea sobre verde o gris
+                        }
+                    }
+                } else if (state.errorMessage != null) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                            Text(state.errorMessage ?: "Error", color = Color.White)
                         }
                     }
                 } else {
-                    // Tomamos del 4to en adelante (índice 3)
                     val restOfList = if (state.items.size > 3) state.items.drop(3) else emptyList()
 
                     itemsIndexed(restOfList) { index, user ->
-                        // La posición real es index + 4
                         val realPosition = index + 4
                         RankingListRow(
                             position = realPosition,
                             username = user.username,
                             points = user.totalPuntos,
-                            level = 8,
-                            days = 20,
+                            suffix = unitSuffix,
+                            level = 8, // Dato mockeado
+                            days = 20, // Dato mockeado
                             isMe = user.username == currentUsername
+                        )
+                    }
+
+                    item { Spacer(Modifier.height(80.dp)) }
+                }
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------
+// COMPONENTES DE FILTRO (MEJORADOS)
+// ----------------------------------------------------------------
+
+@Composable
+fun FilterSection(
+    currentMode: RankingMode,
+    currentResidue: String?,
+    onModeSelected: (RankingMode) -> Unit,
+    onResidueSelected: (String) -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+
+        // Contenedor principal del Switch "Puntos vs Residuo"
+        // Usamos un fondo oscuro semitransparente para dar contraste sobre el verde
+        Surface(
+            color = Color.Black.copy(alpha = 0.2f), // Fondo oscurito para contraste
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterTypeButton(
+                    text = "Puntos Generales",
+                    isSelected = currentMode == RankingMode.PUNTOS,
+                    onClick = { onModeSelected(RankingMode.PUNTOS) }
+                )
+                FilterTypeButton(
+                    text = "Por Residuo",
+                    isSelected = currentMode == RankingMode.RESIDUO,
+                    onClick = { onModeSelected(RankingMode.RESIDUO) }
+                )
+            }
+        }
+
+        // Sub-filtros de materiales
+        AnimatedVisibility(
+            visible = currentMode == RankingMode.RESIDUO,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(12.dp))
+                // Contenedor para los chips de materiales
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                ) {
+                    val materiales = listOf("CARTON" to "Cartón", "PAPEL" to "Papel", "PLASTICO" to "Plástico")
+
+                    materiales.forEach { (apiValue, label) ->
+                        FilterChipMaterial(
+                            text = label,
+                            isSelected = currentResidue == apiValue,
+                            onClick = { onResidueSelected(apiValue) }
                         )
                     }
                 }
@@ -147,60 +234,74 @@ fun RankingScreen(
     }
 }
 
+@Composable
+fun FilterTypeButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
+    // Si está seleccionado: Fondo Blanco, Texto Verde.
+    // Si NO está seleccionado: Fondo Transparente, Texto Blanco (se ve bien sobre el fondo oscuro del padre).
+    val backgroundColor = if (isSelected) Color.White else Color.Transparent
+    val textColor = if (isSelected) GreenPrimary else Color.White.copy(alpha = 0.9f)
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(backgroundColor)
+            .clickableNoRipple(onClick)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+fun FilterChipMaterial(text: String, isSelected: Boolean, onClick: () -> Unit) {
+    // Chips de materiales: Amarillo si seleccionado, Blanco semitransparente si no
+    val bgColor = if (isSelected) Color(0xFFFFC107) else Color.White.copy(alpha = 0.3f)
+    val textColor = if (isSelected) Color.Black else Color.White
+
+    Surface(
+        color = bgColor,
+        shape = RoundedCornerShape(50),
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+    }
+}
+
 // ----------------------------------------------------------------
-// COMPONENTES UI PRINCIPALES
+// RESTO DE COMPONENTES (Header, Tarjetas, etc. - Mantenidos igual)
 // ----------------------------------------------------------------
 
 @Composable
 fun HeaderSection(onBack: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Botón Back y Título
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             IconButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
-            ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
-            }
+                modifier = Modifier.align(Alignment.CenterStart).background(Color.White.copy(alpha = 0.2f), CircleShape)
+            ) { Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White) }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Icono Trofeo Grande
-        Icon(
-            imageVector = Icons.Default.EmojiEvents,
-            contentDescription = null,
-            tint = Color(0xFFFFD54F),
-            modifier = Modifier.size(60.dp)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Ranking de Recicladores",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.White,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Compite con otros usuarios",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.8f)
-        )
-        Spacer(modifier = Modifier.height(20.dp))
+        Icon(Icons.Default.EmojiEvents, null, tint = Color(0xFFFFD54F), modifier = Modifier.size(50.dp))
+        Text("Ranking de Recicladores", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-fun MyPositionCard(position: Int, username: String, points: Int, level: Int, streakDays: Int) {
-    // Si la posición es 0 (no encontrado), mostramos un guión
+fun MyPositionCard(position: Int, username: String, points: Int, suffix: String, level: Int, streakDays: Int) {
     val positionText = if (position > 0) "#$position" else "-"
 
     Card(
@@ -212,7 +313,6 @@ fun MyPositionCard(position: Int, username: String, points: Int, level: Int, str
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F9D58))
     ) {
         Box {
-            // Fondo con gradiente sutil
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -220,11 +320,7 @@ fun MyPositionCard(position: Int, username: String, points: Int, level: Int, str
             )
 
             Column(modifier = Modifier.padding(20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Avatar
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -238,31 +334,17 @@ fun MyPositionCard(position: Int, username: String, points: Int, level: Int, str
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Info Central
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Tu Posición", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            BadgePill(text = "Nivel $level", color = Color.White.copy(alpha = 0.2f))
-                            Spacer(Modifier.width(6.dp))
-                            Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFD54F), modifier = Modifier.size(16.dp))
-                            Text(" $streakDays días", color = Color.White, fontSize = 12.sp)
+                            BadgePill("Nivel $level", Color.White.copy(alpha = 0.2f))
                         }
                     }
 
-                    // Posición Grande y Puntos
                     Column(horizontalAlignment = Alignment.End) {
                         Text(positionText, color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                        Text("$points pts", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
+                        Text("$points $suffix", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Footer
-                ContainerTranslucido {
-                    Icon(Icons.Default.TrendingUp, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("+5 posiciones esta semana", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -272,34 +354,20 @@ fun MyPositionCard(position: Int, username: String, points: Int, level: Int, str
 @Composable
 fun CustomSegmentedControl(currentPeriod: RankingPeriod, onPeriodSelected: (RankingPeriod) -> Unit) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .height(48.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(44.dp),
         shape = RoundedCornerShape(50),
         color = Color.White
     ) {
-        Row(
-            modifier = Modifier.padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(4.dp)) {
             RankingPeriod.values().forEach { period ->
                 val isSelected = currentPeriod == period
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(50))
+                    modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(50))
                         .background(if (isSelected) Color(0xFFF3F4F6) else Color.Transparent)
                         .clickableNoRipple { onPeriodSelected(period) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = period.label,
-                        color = if (isSelected) Color.Black else Color.Gray,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        fontSize = 13.sp
-                    )
+                    Text(period.label, color = if (isSelected) Color.Black else Color.Gray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 12.sp)
                 }
             }
         }
@@ -307,56 +375,35 @@ fun CustomSegmentedControl(currentPeriod: RankingPeriod, onPeriodSelected: (Rank
 }
 
 @Composable
-fun PodiumSection(topThree: List<RankingItem>) {
+fun PodiumSection(topThree: List<com.example.laboratorio.ui.ranking.RankingItem>, suffix: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.Center
     ) {
-        // 2do Lugar (Izquierda)
-        if (topThree.size >= 2) {
-            PodiumItem(user = topThree[1], rank = 2, color = SilverColor, height = 120.dp, modifier = Modifier.weight(1f))
-        } else { Spacer(Modifier.weight(1f)) }
+        if (topThree.size >= 2) PodiumItem(topThree[1], 2, SilverColor, 110.dp, suffix, Modifier.weight(1f))
+        else Spacer(Modifier.weight(1f))
 
-        // 1er Lugar (Centro)
-        if (topThree.isNotEmpty()) {
-            PodiumItem(user = topThree[0], rank = 1, color = GoldColor, height = 150.dp, isWinner = true, modifier = Modifier.weight(1.2f))
-        }
+        if (topThree.isNotEmpty()) PodiumItem(topThree[0], 1, GoldColor, 140.dp, suffix, Modifier.weight(1.2f), true)
 
-        // 3er Lugar (Derecha)
-        if (topThree.size >= 3) {
-            PodiumItem(user = topThree[2], rank = 3, color = BronzeColor, height = 120.dp, modifier = Modifier.weight(1f))
-        } else { Spacer(Modifier.weight(1f)) }
+        if (topThree.size >= 3) PodiumItem(topThree[2], 3, BronzeColor, 110.dp, suffix, Modifier.weight(1f))
+        else Spacer(Modifier.weight(1f))
     }
 }
 
 @Composable
-fun PodiumItem(user: RankingItem, rank: Int, color: Color, height: Dp, isWinner: Boolean = false, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (isWinner) {
-            Icon(Icons.Default.EmojiEvents, null, tint = Color(0xFFFFD54F), modifier = Modifier.size(24.dp))
-        }
-
+fun PodiumItem(user: com.example.laboratorio.ui.ranking.RankingItem, rank: Int, color: Color, height: Dp, suffix: String, modifier: Modifier, isWinner: Boolean = false) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        if (isWinner) Icon(Icons.Default.EmojiEvents, null, tint = GoldColor, modifier = Modifier.size(24.dp))
         Spacer(Modifier.height(4.dp))
-
         Box(
             modifier = Modifier
-                .size(if (isWinner) 70.dp else 50.dp)
+                .size(if (isWinner) 65.dp else 50.dp)
                 .border(3.dp, color, CircleShape)
                 .background(Color.White, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = user.username.take(2).uppercase(),
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                fontSize = if (isWinner) 20.sp else 16.sp
-            )
+            Text(user.username.take(2).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isWinner) 18.sp else 14.sp)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -368,16 +415,14 @@ fun PodiumItem(user: RankingItem, rank: Int, color: Color, height: Dp, isWinner:
                 Text("$rank", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
-
         Spacer(Modifier.height(16.dp))
-
-        Text(user.username, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-        Text("${user.totalPuntos} pts", fontSize = 12.sp, color = GreenPrimary)
+        Text(user.username, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text("${user.totalPuntos} $suffix", fontSize = 10.sp, color = GreenPrimary)
     }
 }
 
 @Composable
-fun RankingListRow(position: Int, username: String, points: Int, level: Int, days: Int, isMe: Boolean) {
+fun RankingListRow(position: Int, username: String, points: Int, suffix: String, level: Int, days: Int, isMe: Boolean) {
     val bgColor = if (isMe) Color(0xFFE8F5E9) else Color.White
 
     Card(
@@ -390,29 +435,11 @@ fun RankingListRow(position: Int, username: String, points: Int, level: Int, day
         border = if (isMe) BorderStroke(1.dp, GreenPrimary) else null
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Posición
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(if (isMe) GreenPrimary else Color(0xFFF3F4F6), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "$position",
-                    fontWeight = FontWeight.Bold,
-                    color = if (isMe) Color.White else Color.Gray,
-                    fontSize = 14.sp
-                )
-            }
+            Text("$position", fontWeight = FontWeight.Bold, color = if (isMe) GreenPrimary else Color.Gray, modifier = Modifier.width(30.dp))
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -424,73 +451,32 @@ fun RankingListRow(position: Int, username: String, points: Int, level: Int, day
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Datos
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = username,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isMe) GreenDarker else Color.Black
-                    )
-                    if (isMe) {
-                        Spacer(Modifier.width(6.dp))
-                        BadgePill("Tú", GreenPrimary)
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Nivel $level", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFD54F), modifier = Modifier.size(12.dp))
-                    Text(" $days días", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                }
+                Text(username, fontWeight = FontWeight.Bold, color = if (isMe) GreenDarker else Color.Black)
+                Text("Nivel $level", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
 
-            // Puntos
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "$points",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = if (isMe) GreenDarker else Color.Gray
-                )
-                Text("puntos", fontSize = 10.sp, color = Color.Gray)
-            }
+            Text("$points $suffix", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (isMe) GreenDarker else Color.Gray)
         }
     }
 }
 
-// ----------------------------------------------------------------
-// FUNCIONES DE AYUDA (HELPERS)
-// ----------------------------------------------------------------
-
+// Helpers
 @Composable
 fun BadgePill(text: String, color: Color) {
     Surface(color = color, shape = RoundedCornerShape(4.dp)) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
+        Text(text, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = Color.White)
     }
 }
 
 @Composable
 fun ContainerTranslucido(content: @Composable RowScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
+    Box(modifier = Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp)).padding(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, content = content)
     }
 }
 
 @Composable
 fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.then(
-    Modifier.clickable(
-        interactionSource = remember { MutableInteractionSource() },
-        indication = null,
-        onClick = onClick
-    )
+    Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
 )
