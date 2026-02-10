@@ -6,9 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio.ui.auth.network.RetrofitClient
-import com.example.laboratorio.ui.auth.network.RetrofitClient.rankingApi
-import kotlinx.coroutines.launch
 import com.example.laboratorio.ui.network.RankingApiService
+import kotlinx.coroutines.launch
+
+// NOTA: Borramos las definiciones de data class y enums de aquí
+// porque ya las tienes en RankingUiState.kt, RankingEnums.kt, etc.
 
 class RankingViewModel(
     private val rankingApi: RankingApiService = RetrofitClient.rankingApi
@@ -17,17 +19,29 @@ class RankingViewModel(
     var uiState by mutableStateOf(RankingUiState())
         private set
 
-    // --- ACCIONES (Sin cambios) ---
-
-    fun setMode(mode: RankingMode) {
-        if (uiState.mode == mode) return
-        // Si cambiamos a PUNTOS, limpiamos el residuo seleccionado
-        val newResidue = if (mode == RankingMode.PUNTOS) null else uiState.selectedResidue
-        uiState = uiState.copy(mode = mode, selectedResidue = newResidue)
+    // --- BLOQUE INIT: CARGA AUTOMÁTICA AL INICIAR ---
+    init {
         loadRanking()
     }
 
-    fun setResiduo(residuo: String?) {
+    // --- ACCIONES ---
+
+    fun setMode(mode: RankingMode) {
+        if (uiState.mode == mode) return
+
+        // Si cambiamos a RESIDUO, seleccionamos uno por defecto ("PLASTICO") para que no quede vacío.
+        val newResidue = if (mode == RankingMode.RESIDUO) "PLASTICO" else null
+
+        uiState = uiState.copy(
+            mode = mode,
+            selectedResidue = newResidue,
+            errorMessage = null // Limpiamos errores previos
+        )
+
+        loadRanking()
+    }
+
+    fun setResiduo(residuo: String) {
         if (uiState.selectedResidue == residuo) return
         uiState = uiState.copy(selectedResidue = residuo)
         loadRanking()
@@ -36,33 +50,32 @@ class RankingViewModel(
     fun setPeriod(period: RankingPeriod) {
         if (uiState.period == period) return
         uiState = uiState.copy(period = period)
-        // Solo recargamos si estamos en modo PUNTOS, el modo RESIDUO no usa periodo
+
+        // Solo recargamos si estamos en modo PUNTOS
         if (uiState.mode == RankingMode.PUNTOS) {
             loadRanking()
         }
     }
 
-    // --- CARGA DE DATOS (LÓGICA CORREGIDA) ---
+    // --- CARGA DE DATOS ---
 
-    fun loadRanking() {
+    private fun loadRanking() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
             try {
-                // REGLA 1: Si estamos en modo RESIDUO pero no hay selección, lista vacía.
+                // REGLA 1: Validación de seguridad
                 if (uiState.mode == RankingMode.RESIDUO && uiState.selectedResidue == null) {
                     uiState = uiState.copy(isLoading = false, items = emptyList())
                     return@launch
                 }
 
-                // REGLA 2: Decidir qué endpoint llamar según el MODO
+                // REGLA 2: Llamada a la API según modo
                 val result = if (uiState.mode == RankingMode.RESIDUO) {
-                    // --- MODO RESIDUO: Usamos el nuevo endpoint específico con @Path ---
-                    // Usamos !! porque la REGLA 1 ya aseguró que no es null aquí.
+                    // MODO RESIDUO
                     rankingApi.getRankingPorResiduo(tipoResiduo = uiState.selectedResidue!!)
-
                 } else {
-                    // --- MODO PUNTOS: Usamos los endpoints globales/semanales ---
+                    // MODO PUNTOS
                     when (uiState.period) {
                         RankingPeriod.GLOBAL -> rankingApi.getRankingGlobal()
                         RankingPeriod.SEMANAL -> rankingApi.getRankingSemanal()

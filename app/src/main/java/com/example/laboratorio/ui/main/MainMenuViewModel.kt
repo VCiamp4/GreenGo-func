@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.laboratorio.data.UserRepository
 import com.example.laboratorio.ui.auth.network.ApiErrorResponse
 import com.example.laboratorio.ui.auth.network.ReclamarResiduoRequest
 import com.example.laboratorio.ui.auth.network.RetrofitClient
@@ -38,7 +39,7 @@ data class MainMenuUiState(
     val roadOverlay: Polyline? = null,
     val distanciaRuta: String? = null,
     val tiempoRuta: String? = null,
-
+    val points: Int = 0, // Usamos Int y 'points' para coincidir con el resto
 )
 
 class MainMenuViewModel : ViewModel() {
@@ -51,6 +52,19 @@ class MainMenuViewModel : ViewModel() {
         
         var idToUse = rawContent
 
+        init {
+            // 1. Conectamos con UserRepository para tener los puntos sincronizados con la Tienda
+            viewModelScope.launch {
+                UserRepository.userPoints.collect { currentPoints ->
+                    uiState = uiState.copy(points = currentPoints)
+                }
+            }
+
+            // 2. Cargamos datos iniciales
+            loadUserData()
+            loadEstaciones()
+        }
+        
         // Intentamos extraer el ID si el QR es un JSON (como muestra el log)
         try {
             val gson = Gson()
@@ -68,6 +82,8 @@ class MainMenuViewModel : ViewModel() {
             reclamarResiduo(idToUse)
         }
     }
+
+    private fun init(function: () -> Unit) {}
 
     private fun reclamarResiduo(idResiduo: String) {
         uiState = uiState.copy(isClaiming = true, reclamarError = null, reclamarMessage = null)

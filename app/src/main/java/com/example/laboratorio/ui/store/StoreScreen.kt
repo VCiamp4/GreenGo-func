@@ -28,12 +28,6 @@ import com.example.laboratorio.ui.main.store.StoreViewModel
 // --- COLORES ---
 private val GreenPrimary = Color(0xFF00C49A)
 private val GreenDarker = Color(0xFF008F7A)
-private val OrangeGradientStart = Color(0xFFFF9800)
-private val OrangeGradientEnd = Color(0xFFFF5722)
-private val PurpleGradientStart = Color(0xFFE040FB)
-private val PurpleGradientEnd = Color(0xFFD500F9)
-private val TealGradientStart = Color(0xFF1DE9B6)
-private val TealGradientEnd = Color(0xFF00BFA5)
 
 @Composable
 fun StoreScreen(
@@ -96,7 +90,7 @@ fun StoreScreen(
                             typeTag = typeTag,
                             duration = duration,
                             isPopular = item.name.contains("2x"),
-                            isOwned = item.isOwned, // <--- Estado de comprado
+                            isOwned = item.isOwned,
                             onBuy = { viewModel.buyItem(item) }
                         )
                     }
@@ -105,11 +99,19 @@ fun StoreScreen(
                 }
             }
         }
+
+        // 3. DIÁLOGO DE CAJA MISTERIOSA (Si está activo)
+        if (state.showMysteryBoxDialog && state.mysteryPrize != null) {
+            MysteryBoxDialog(
+                prize = state.mysteryPrize!!,
+                onDismiss = { viewModel.closeMysteryBox() }
+            )
+        }
     }
 }
 
 // ----------------------------------------------------------------
-// COMPONENTES UI
+// COMPONENTES UI (QUE FALTABAN ANTES)
 // ----------------------------------------------------------------
 
 @Composable
@@ -215,6 +217,8 @@ fun StoreItemCard(
     isOwned: Boolean,
     onBuy: () -> Unit
 ) {
+    // Solo puede comprar si tiene puntos Y NO lo tiene ya (a menos que sea consumible como la caja)
+    // Nota: La caja misteriosa en el ViewModel viene con isOwned = false siempre, así que se puede comprar.
     val canBuy = userPoints >= cost && !isOwned
 
     Card(
@@ -306,7 +310,7 @@ fun StoreItemCard(
                         Icon(Icons.Default.AutoAwesome, null, tint = GreenDarker, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = if(name.contains("2x")) "+2x Puntos por reciclaje" else if (name.contains("Suerte")) "+30% Suerte" else if(name.contains("Logro")) "Insignia desbloqueable" else "Beneficio activo",
+                            text = if(name.contains("2x")) "+2x Puntos" else if(name.contains("Caja")) "Premios sorpresa" else if(name.contains("Pista")) "Ayuda en Trivia" else "Beneficio activo",
                             color = GreenDarker,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
@@ -379,7 +383,7 @@ fun TagChip(text: String, bgColor: Color, textColor: Color) {
     }
 }
 
-// --- HELPERS Y DATA CLASS (IMPORTANTE: Esto faltaba) ---
+// --- LOGICA VISUAL Y DATA CLASS (FALTABAN ANTES) ---
 
 fun determineVisuals(itemName: String): VisualData {
     return when {
@@ -401,6 +405,20 @@ fun determineVisuals(itemName: String): VisualData {
             tag = "Suerte",
             duration = "7 días"
         )
+        // NUEVOS OBJETOS
+        itemName.contains("Caja", ignoreCase = true) -> VisualData(
+            gradient = listOf(Color(0xFFEC407A), Color(0xFFAD1457)),
+            icon = Icons.Default.CardGiftcard,
+            tag = "Suerte",
+            duration = "Instantáneo"
+        )
+        itemName.contains("Pista", ignoreCase = true) -> VisualData(
+            gradient = listOf(Color(0xFFFFCA28), Color(0xFFFF6F00)),
+            icon = Icons.Default.Lightbulb,
+            tag = "Utilidad",
+            duration = "1 uso"
+        )
+        // Logros
         itemName.contains("Logro", ignoreCase = true) -> VisualData(
             gradient = listOf(Color(0xFFFFD700), Color(0xFFFFA000)),
             icon = Icons.Default.EmojiEvents,
@@ -416,7 +434,6 @@ fun determineVisuals(itemName: String): VisualData {
     }
 }
 
-// La clase de datos necesaria para que funcione 'determineVisuals'
 data class VisualData(
     val gradient: List<Color>,
     val icon: ImageVector,

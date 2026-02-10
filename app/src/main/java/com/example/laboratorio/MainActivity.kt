@@ -22,9 +22,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Configuración de OSMDroid para el mapa
         val ctx = applicationContext
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
-        // El userAgent debe ser el ID de tu app
         Configuration.getInstance().userAgentValue = packageName
 
         checkLocationPermissions()
@@ -50,62 +50,64 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(this, notGranted.toTypedArray(), 0)
         }
     }
-
 }
 
-
+// Enum simplificado: Solo las pantallas que NO están dentro del BottomBar del menú
+enum class AppScreen {
+    LOGIN, SIGNUP, MENU, ACHIEVEMENTS
+}
 
 @Composable
 fun AppEntry() {
+    // Controlamos la navegación principal
+    var currentScreen by rememberSaveable { mutableStateOf(AppScreen.LOGIN) }
+
+    // Variables para mantener sesión básica en UI
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
-    var userName by rememberSaveable { mutableStateOf("") }
-    var userEmail by rememberSaveable { mutableStateOf("") }
-    var showSignUp by rememberSaveable { mutableStateOf(false) }
 
-    // 1. NUEVO ESTADO: Controla si se ve la pantalla de logros
-    var showAchievements by rememberSaveable { mutableStateOf(false) }
-
-    when {
-        // 2. Si showAchievements es true, mostramos esa pantalla
-        showAchievements -> {
-            AchievementsScreen(
-                onBack = { showAchievements = false } // Al volver, ocultamos logros y regresa al MainMenu
+    when (currentScreen) {
+        // 1. PANTALLA DE LOGIN
+        AppScreen.LOGIN -> {
+            LoginScreen(
+                onLoginSuccess = { name, email ->
+                    isLoggedIn = true
+                    currentScreen = AppScreen.MENU
+                },
+                onGoToSignUp = {
+                    currentScreen = AppScreen.SIGNUP
+                }
             )
         }
 
-        isLoggedIn -> {
+        // 2. PANTALLA DE REGISTRO
+        AppScreen.SIGNUP -> {
+            SignUpScreen(
+                onBackToLogin = { currentScreen = AppScreen.LOGIN },
+                onSignUpSuccess = { email ->
+                    currentScreen = AppScreen.LOGIN
+                }
+            )
+        }
+
+        // 3. MENÚ PRINCIPAL
+        // Nota: Tu MainMenu ya se encarga de mostrar el Mapa, Escáner, Tienda y Ranking internamente.
+        AppScreen.MENU -> {
             MainMenu(
                 onLogout = {
                     TokenStore.clear()
                     isLoggedIn = false
+                    currentScreen = AppScreen.LOGIN
                 },
-                // 3. Pasamos la acción para activar el estado de logros
                 onAchievementsClick = {
-                    showAchievements = true
+                    currentScreen = AppScreen.ACHIEVEMENTS
                 }
             )
         }
 
-        showSignUp -> {
-            SignUpScreen(
-                onBackToLogin = { showSignUp = false },
-                onSignUpSuccess = { email ->
-                    userEmail = email
-                    showSignUp = false
-                }
-            )
-        }
-
-        else -> {
-            LoginScreen(
-                onLoginSuccess = { name, email ->
-                    userName = name
-                    userEmail = email
-                    isLoggedIn = true
-                },
-                onGoToSignUp = {
-                    showSignUp = true
-                }
+        // 4. PANTALLA DE LOGROS
+        AppScreen.ACHIEVEMENTS -> {
+            AchievementsScreen(
+                onBack = { currentScreen = AppScreen.MENU }
             )
         }
     }
