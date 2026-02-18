@@ -8,6 +8,10 @@ data class RankingUiState(
     val items: List<RankingItem> = emptyList(),
     val period: RankingPeriod = RankingPeriod.GLOBAL,
     val mode: RankingMode = RankingMode.PUNTOS,
-    val selectedResidue: String? = null
+    val selectedResidue: String? = null,
+    val username: String? = null,
+    val miPosicionReal: Int = 0,
+    val misPuntosEnRanking: Int = 0,
+    val userId: Int = 0
 )
 

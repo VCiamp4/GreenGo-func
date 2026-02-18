@@ -87,7 +87,7 @@ fun MainMenu(
                         state.categoria?.let { Text("Categoría: $it") }
                         state.puntos?.let { Text("Puntos ganados: $it") }
                         Text(
-                            text = "Total actual: ${state.points} pts",
+                            text = "Total actual: ${state.puntosTotales} pts",
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -179,7 +179,7 @@ fun MainMenu(
                                     DailyTriviaCard()
 
                                     // 2. Tarjeta de Puntos (Usamos state.points para tiempo real)
-                                    PointsCardFigma(state.points)
+                                    PointsCardFigma(state.puntosTotales)
 
                                     // 3. Tarjeta de Racha
                                     StreakAndProgressCard(daysConsecutive = 5)

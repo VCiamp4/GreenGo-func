@@ -101,10 +101,12 @@ fun LoginScreen(
                         placeholder = { Text("tu_usuario") },
                         leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(LightGrayBg, RoundedCornerShape(12.dp)),
+                            .fillMaxWidth(),
                         singleLine = true,
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading,
+                        colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.DarkGray)
                     )
 
                     Spacer(Modifier.height(12.dp))
@@ -131,10 +133,12 @@ fun LoginScreen(
                             if (state.showPassword) VisualTransformation.None
                             else PasswordVisualTransformation(),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(LightGrayBg, RoundedCornerShape(12.dp)),
+                            .fillMaxWidth(),
                         singleLine = true,
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.DarkGray)
                     )
 
                     Spacer(Modifier.height(8.dp))

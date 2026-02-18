@@ -63,7 +63,7 @@ class SignUpViewModel : ViewModel() {
                     )
                 )
 
-                TokenStore.setTokens(access = response.access, refresh = response.refresh)
+                TokenStore.setTokens(access = response.access, refresh = response.refresh, userId = response.user_id)
                 uiState = uiState.copy(isLoading = false)
                 onSuccess(uiState.username)
 

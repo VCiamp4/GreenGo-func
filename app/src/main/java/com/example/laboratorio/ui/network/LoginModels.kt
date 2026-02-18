@@ -7,7 +7,8 @@ data class LoginRequest(
 
 data class LoginResponse(
     val access: String,
-    val refresh: String
+    val refresh: String,
+    val user_id: Int
 )
 
 data class SignUpRequest(

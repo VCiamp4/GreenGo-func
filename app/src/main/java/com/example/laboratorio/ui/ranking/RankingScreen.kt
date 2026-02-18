@@ -9,10 +9,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,13 +48,9 @@ fun RankingScreen(
 ) {
     val state = viewModel.uiState
     val unitSuffix = if (state.mode == RankingMode.RESIDUO) "kg" else "pts"
-    val currentUsername = "sciamparella" // TODO: Usar usuario real
-
-    // Cálculos de posición propia
-    val myUserIndex = state.items.indexOfFirst { it.username == currentUsername }
-    val myUserItem = state.items.getOrNull(myUserIndex)
-    val myRank = if (myUserIndex >= 0) myUserIndex + 1 else 0
-    val myPoints = myUserItem?.totalPuntos ?: 0
+    val currentUsername = state.username ?: "Usuario"
+    val myRank = state.miPosicionReal
+    val myPoints = state.misPuntosEnRanking
 
     Scaffold(
         containerColor = BackgroundColor
@@ -172,8 +170,20 @@ fun FilterSection(
         ) {
             Column {
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 24.dp)) {
-                    val materiales = listOf("CARTON" to "Cartón", "PAPEL" to "Papel", "PLASTICO" to "Plástico")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val materiales = listOf(
+                        "Plastico" to "Plástico",
+                        "Carton" to "Cartón",
+                        "Papel" to "Papel",
+                        "Vidrio" to "Vidrio",
+                        "Metal" to "Metal"
+                    )
                     materiales.forEach { (apiValue, label) ->
                         FilterChipMaterial(label, currentResidue == apiValue) { onResidueSelected(apiValue) }
                     }
