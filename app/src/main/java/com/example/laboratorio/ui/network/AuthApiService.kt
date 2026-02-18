@@ -8,6 +8,8 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 import com.example.laboratorio.ui.network.Estacion
+import com.example.laboratorio.ui.network.model.PuntosResponse
+import retrofit2.http.Query
 
 
 interface AuthApiService {
@@ -38,9 +40,13 @@ interface AuthApiService {
     @GET("/api/estaciones/{id}")
     suspend fun getEstacionDetalle(@Path("id") id: Int): Estacion
 
-
     @POST("api/reclamar_residuo/")
     suspend fun reclamarResiduo(
         @Body request: Map<String, String>
     ): ReclamarResponse
+
+    @GET("/api/puntos/")
+    suspend fun obtenerPuntos(
+        @Query("id_user") idUser: Int? = null
+    ): PuntosResponse
 }

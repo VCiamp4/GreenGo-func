@@ -74,15 +74,27 @@ class MainMenuViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
+                val puntosAntes = uiState.puntosTotales
+
                 val response = RetrofitClient.authApi.reclamarResiduo(ReclamarResiduoRequest(id_residuo = idResiduo))
 
                 if (response.isSuccessful) {
                     val body = response.body()
+
+                    kotlinx.coroutines.delay(800)
+
+                    val puntosData = RetrofitClient.authApi.obtenerPuntos()
+                    val puntosDespues = puntosData.puntos
+
+                    val puntosGanados = puntosDespues - puntosAntes
+
+
                     uiState = uiState.copy(
                         isClaiming = false,
                         reclamarMessage = body?.message,
                         categoria = body?.categoria,
-                        puntos = body?.puntos
+                        puntos = puntosGanados,
+                        puntosTotales = puntosDespues
                     )
                     loadUserData()
                 } else {
@@ -143,11 +155,13 @@ class MainMenuViewModel : ViewModel() {
             try {
                 val response = RetrofitClient.authApi.datosUsuario()
 
+                val puntosResponse = RetrofitClient.authApi.obtenerPuntos()
+
                 uiState = uiState.copy(
                     isLoading = false,
                     username = response.username,
                     userId = response.id,
-                    puntosTotales = response.puntos_totales
+                    puntosTotales = puntosResponse.puntos
                 )
 
             } catch (e: Exception) {

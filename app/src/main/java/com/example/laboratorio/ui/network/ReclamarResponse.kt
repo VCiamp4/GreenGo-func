@@ -6,3 +6,7 @@ data class ReclamarResponse(
     val puntos: Int,
     val puntos_totales: Int
 )
+
+data class PuntosResponse(
+    val puntos: Int
+)

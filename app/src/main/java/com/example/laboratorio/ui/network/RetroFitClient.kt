@@ -10,10 +10,10 @@ object RetrofitClient {
 
 
     //ip computadora grego para prueba en telefono fisico
-    //private const val BASE_URL = "http://192.168.0.112:8000/"
+    private const val BASE_URL = "http://192.168.0.112:8000/"
 
     //ip computadora valen para probar en pc
-    private const val BASE_URL = "http://10.0.2.2:8000/"
+    // const val BASE_URL = "http://10.0.2.2:8000/"
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
