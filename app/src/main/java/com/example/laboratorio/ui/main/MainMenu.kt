@@ -29,16 +29,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
-// Imports de tus otras pantallas (Mantenlos igual)
+// Imports de tus otras pantallas
 import com.example.laboratorio.ui.store.StoreScreen
 import com.example.laboratorio.ui.ranking.RankingScreen
 
+// IMPORTS NUEVOS (Para que funcione la Trivia y el Avatar)
+import com.example.laboratorio.data.UserRepository
+// Asegúrate de que estos archivos existan en el paquete ui.main:
+// import com.example.laboratorio.ui.main.AvatarSelectionDialog
+// import com.example.laboratorio.ui.main.DailyTriviaCard
+
 // Definición de Colores del Diseño (Figma)
-private val GreenPrimary = Color(0xFF00C49A) // El verde vibrante del header
+private val GreenPrimary = Color(0xFF00C49A)
 private val GreenDarker = Color(0xFF00A884)
-private val BackgroundColor = Color(0xFFF5F7F8) // Fondo gris muy claro
-private val CardBeige = Color(0xFFFFF8E7) // Fondo de la tarjeta de racha
-private val FireOrange = Color(0xFFFF5722) // Naranja del fuego
+private val BackgroundColor = Color(0xFFF5F7F8)
+private val CardBeige = Color(0xFFFFF8E7)
+private val FireOrange = Color(0xFFFF5722)
 
 @Composable
 fun MainMenu(
@@ -49,6 +55,9 @@ fun MainMenu(
     val state = viewModel.uiState
     var selectedTab by remember { mutableStateOf(MainTab.SCAN) }
     var showMap by remember { mutableStateOf(false) }
+
+    // ESTADO NUEVO: Para mostrar el selector de avatar
+    var showAvatarSelector by remember { mutableStateOf(false) }
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         viewModel.onScanResult(result.contents)
@@ -78,7 +87,7 @@ fun MainMenu(
                         state.categoria?.let { Text("Categoría: $it") }
                         state.puntos?.let { Text("Puntos ganados: $it") }
                         Text(
-                            text = "Total actual: ${state.puntosTotales} pts",
+                            text = "Total actual: ${state.points} pts",
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -126,7 +135,7 @@ fun MainMenu(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp) // Altura del fondo verde
+                    .height(280.dp)
                     .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
                     .background(
                         Brush.verticalGradient(
@@ -137,15 +146,16 @@ fun MainMenu(
 
             // Contenido Principal
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 // Header (Dentro del área verde)
                 TopHeaderFigmaStyle(
                     username = state.username ?: "Usuario",
                     level = 5,
-                    onAchievementsClick = onAchievementsClick, // <--- PASARLO AQUÍ
-                    onLogout = onLogout
+                    onAchievementsClick = onAchievementsClick,
+                    onLogout = onLogout,
+                    // NUEVO: Acción al hacer click en el avatar
+                    onAvatarClick = { showAvatarSelector = true }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -165,13 +175,16 @@ fun MainMenu(
                                     verticalArrangement = Arrangement.spacedBy(20.dp),
                                     modifier = Modifier.verticalScroll(rememberScrollState())
                                 ) {
-                                    // Tarjeta de Puntos Principal
-                                    PointsCardFigma(state.puntosTotales)
+                                    // 1. NUEVO: TARJETA DE TRIVIA (Insertada aquí)
+                                    DailyTriviaCard()
 
-                                    // Tarjeta de Racha y Días (Combinada)
+                                    // 2. Tarjeta de Puntos (Usamos state.points para tiempo real)
+                                    PointsCardFigma(state.points)
+
+                                    // 3. Tarjeta de Racha
                                     StreakAndProgressCard(daysConsecutive = 5)
 
-                                    // Botón Mapa (Opcional, estilo simple para no romper diseño)
+                                    // Botón Mapa
                                     Button(
                                         onClick = { showMap = true },
                                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -206,6 +219,11 @@ fun MainMenu(
                     CircularProgressIndicator(color = Color.White)
                 }
             }
+
+            // NUEVO: Diálogo de Selección de Avatar
+            if (showAvatarSelector) {
+                AvatarSelectionDialog(onDismiss = { showAvatarSelector = false })
+            }
         }
     }
 }
@@ -216,38 +234,46 @@ fun MainMenu(
 private fun TopHeaderFigmaStyle(
     username: String,
     level: Int,
-    onAchievementsClick: () -> Unit, // <--- Nuevo parámetro para la navegación
-    onLogout: () -> Unit
+    onAchievementsClick: () -> Unit,
+    onLogout: () -> Unit,
+    onAvatarClick: () -> Unit // <--- Parámetro nuevo
 ) {
+    // NUEVO: Leemos el avatar real del repositorio
+    val currentAvatarKey by UserRepository.currentAvatar.collectAsState()
+    val avatarIcon = UserRepository.availableAvatars[currentAvatarKey] ?: Icons.Default.Person
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
-        // Fila Superior: Avatar y Botones de Acción
+        // Fila Superior
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            // --- AVATAR CON BADGE ---
-            Box {
+            // --- AVATAR CLICKABLE ---
+            Box(
+                modifier = Modifier.clickable { onAvatarClick() } // <--- Click aquí
+            ) {
                 Box(
                     modifier = Modifier
                         .size(60.dp)
                         .border(2.dp, Color.White, CircleShape)
                         .clip(CircleShape)
-                        .background(Color(0xFF0F8C6E)), // Color de fallback si no hay foto
+                        .background(Color(0xFF0F8C6E)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = username.take(1).uppercase(),
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                    // CAMBIO: Mostramos el Ícono en vez de la Letra
+                    Icon(
+                        imageVector = avatarIcon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                // Badge amarilla (Estrella)
+                // Badge
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -266,26 +292,11 @@ private fun TopHeaderFigmaStyle(
                 }
             }
 
-            // --- BOTONES DE ACCIÓN (Logros, Notificaciones, Config) ---
+            // --- BOTONES ---
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                // 1. Botón de Logros (NUEVO)
-                HeaderIconButton(
-                    icon = Icons.Default.EmojiEvents,
-                    onClick = onAchievementsClick
-                )
-
-                // 2. Botón de Notificaciones (Solo visual por ahora)
-                HeaderIconButton(
-                    icon = Icons.Outlined.Notifications,
-                    onClick = { /* Acción futura */ }
-                )
-
-                // 3. Botón de Configuración (Logout)
-                HeaderIconButton(
-                    icon = Icons.Outlined.Settings,
-                    onClick = onLogout
-                )
+                HeaderIconButton(Icons.Default.EmojiEvents, onAchievementsClick)
+                HeaderIconButton(Icons.Outlined.Notifications, { /* TODO */ })
+                HeaderIconButton(Icons.Outlined.Settings, onLogout)
             }
         }
 
@@ -317,7 +328,6 @@ private fun TopHeaderFigmaStyle(
     }
 }
 
-// Asegúrate de tener este helper también en el archivo (o al final del mismo)
 @Composable
 private fun HeaderIconButton(icon: ImageVector, onClick: () -> Unit) {
     Box(
@@ -326,7 +336,7 @@ private fun HeaderIconButton(icon: ImageVector, onClick: () -> Unit) {
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.15f))
             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick), // Hacemos clickeable el box
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(icon, contentDescription = null, tint = Color.White)
@@ -348,16 +358,15 @@ private fun PointsCardFigma(points: Int) {
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Ícono circular grande
             Box(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(GreenPrimary.copy(alpha = 0.1f)), // Verde muy suave de fondo
+                    .background(GreenPrimary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Filled.Autorenew, // Icono de reciclaje
+                    Icons.Filled.Autorenew,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = GreenPrimary
@@ -366,39 +375,17 @@ private fun PointsCardFigma(points: Int) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Puntaje Total",
-                color = Color.Gray,
-                fontSize = 16.sp
-            )
-
-            Text(
-                text = "$points pts",
-                color = GreenPrimary,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Puntaje Total", color = Color.Gray, fontSize = 16.sp)
+            Text("$points pts", color = GreenPrimary, fontSize = 32.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(16.dp))
-
             Divider(modifier = Modifier.padding(horizontal = 40.dp).alpha(0.1f))
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Footer "Top 15%"
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Filled.EmojiEvents,
-                    contentDescription = null,
-                    tint = Color(0xFFE2B93B),
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Filled.EmojiEvents, null, tint = Color(0xFFE2B93B), modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Top 15% de recicladores",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
+                Text("Top 15% de recicladores", color = Color.Gray, fontSize = 14.sp)
             }
         }
     }
@@ -409,63 +396,34 @@ private fun StreakAndProgressCard(daysConsecutive: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBeige) // Color crema
+        colors = CardDefaults.cardColors(containerColor = CardBeige)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            // Fila Superior: Icono Fuego y Texto
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Caja naranja con fuego
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .shadow(8.dp, RoundedCornerShape(12.dp), spotColor = FireOrange)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFFFF8A65), FireOrange)
-                            )
-                        ),
+                        .background(Brush.linearGradient(listOf(Color(0xFFFF8A65), FireOrange))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Filled.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
+                    Icon(Icons.Filled.LocalFireDepartment, null, tint = Color.White)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
-                    Text(
-                        text = "$daysConsecutive días consecutivos",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color(0xFF5D4037) // Marrón oscuro
-                    )
-                    Text(
-                        text = "¡Mantén el ritmo!",
-                        fontSize = 14.sp,
-                        color = FireOrange
-                    )
+                    Text("$daysConsecutive días consecutivos", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF5D4037))
+                    Text("¡Mantén el ritmo!", fontSize = 14.sp, color = FireOrange)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Fila Inferior: Días de la semana (D L M X J)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 val days = listOf("D", "L", "M", "X", "J")
-                // Simulación de estado: Los primeros 5 completados
-                days.forEachIndexed { index, day ->
-                    DayIndicator(day = day, isCompleted = true)
-                }
-                // Si quisieras agregar S y D vacíos podrías
+                days.forEachIndexed { _, day -> DayIndicator(day = day, isCompleted = true) }
             }
         }
     }
@@ -474,162 +432,72 @@ private fun StreakAndProgressCard(daysConsecutive: Int) {
 @Composable
 private fun DayIndicator(day: String, isCompleted: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = day,
-            color = if (isCompleted) GreenDarker else Color.Gray,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
+        Text(day, color = if (isCompleted) GreenDarker else Color.Gray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
         if (isCompleted) {
-            // Caso completado: Tiene icono, necesita contentAlignment
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(GreenPrimary),
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(GreenPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
             }
         } else {
-            // CORRECCIÓN AQUÍ:
-            // Caso pendiente: Es solo un circulo vacio, quitamos el contentAlignment
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFD54F)) // Amarillo
-            )
+            Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFFFD54F)))
         }
     }
 }
 
-// --- BARRA DE NAVEGACIÓN INFERIOR ---
-
 @Composable
-private fun BottomBar(
-    selected: MainTab,
-    onSelect: (MainTab) -> Unit,
-    onScanClick: () -> Unit
-) {
-    // Elevación y fondo blanco limpio
-    Surface(
-        shadowElevation = 16.dp,
-        color = Color.White
-    ) {
-        NavigationBar(
-            containerColor = Color.White,
-            tonalElevation = 0.dp
-        ) {
-            // --- BOTÓN TIENDA ---
+private fun BottomBar(selected: MainTab, onSelect: (MainTab) -> Unit, onScanClick: () -> Unit) {
+    Surface(shadowElevation = 16.dp, color = Color.White) {
+        NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
             NavigationBarItem(
                 selected = selected == MainTab.STORE,
                 onClick = { onSelect(MainTab.STORE) },
-                icon = {
-                    Icon(
-                        Icons.Filled.Storefront,
-                        null,
-                        tint = if (selected == MainTab.STORE) GreenPrimary else Color.Gray
-                    )
-                },
-                label = {
-                    Text(
-                        "Tienda",
-                        color = if (selected == MainTab.STORE) GreenPrimary else Color.Gray
-                    )
-                },
+                icon = { Icon(Icons.Filled.Storefront, null, tint = if (selected == MainTab.STORE) GreenPrimary else Color.Gray) },
+                label = { Text("Tienda", color = if (selected == MainTab.STORE) GreenPrimary else Color.Gray) },
                 colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
             )
 
-            // --- BOTÓN CENTRAL (DINÁMICO: QR o HOME) ---
             val isHome = selected == MainTab.SCAN
-
             NavigationBarItem(
                 selected = isHome,
-                onClick = {
-                    if (isHome) onScanClick() // Si ya estoy en home, abro el escáner
-                    else onSelect(MainTab.SCAN) // Si estoy en otro lado, vuelvo al home
-                },
+                onClick = { if (isHome) onScanClick() else onSelect(MainTab.SCAN) },
                 icon = {
                     Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(GreenPrimary)
-                            .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = GreenPrimary),
+                        modifier = Modifier.size(50.dp).clip(RoundedCornerShape(16.dp)).background(GreenPrimary).shadow(8.dp, RoundedCornerShape(16.dp), spotColor = GreenPrimary),
                         contentAlignment = Alignment.Center
                     ) {
-                        // AQUÍ ESTÁ EL CAMBIO:
-                        // Si estoy en Home -> Muestro QR
-                        // Si NO estoy en Home -> Muestro la Casita
-                        Icon(
-                            imageVector = if (isHome) Icons.Filled.QrCodeScanner else Icons.Filled.Home,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        Icon(if (isHome) Icons.Filled.QrCodeScanner else Icons.Filled.Home, null, tint = Color.White, modifier = Modifier.size(28.dp))
                     }
                 },
-                label = {
-                    Text(
-                        text = if (isHome) "Escanear" else "Inicio",
-                        color = GreenPrimary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                },
+                label = { Text(if (isHome) "Escanear" else "Inicio", color = GreenPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp)) },
                 colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
             )
 
-            // --- BOTÓN RANKING ---
             NavigationBarItem(
                 selected = selected == MainTab.RANKING,
                 onClick = { onSelect(MainTab.RANKING) },
-                icon = {
-                    Icon(
-                        Icons.Filled.EmojiEvents,
-                        null,
-                        tint = if (selected == MainTab.RANKING) GreenPrimary else Color.Gray
-                    )
-                },
-                label = {
-                    Text(
-                        "Ranking",
-                        color = if (selected == MainTab.RANKING) GreenPrimary else Color.Gray
-                    )
-                },
+                icon = { Icon(Icons.Filled.EmojiEvents, null, tint = if (selected == MainTab.RANKING) GreenPrimary else Color.Gray) },
+                label = { Text("Ranking", color = if (selected == MainTab.RANKING) GreenPrimary else Color.Gray) },
                 colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
             )
         }
     }
 }
-
-// --- SECCIÓN DE MAPA (Lógica mantenida, estilo actualizado mínimamente) ---
 
 @Composable
 private fun MapSection(state: MainMenuUiState, viewModel: MainMenuViewModel, onClose: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Cabecera simple oscura para el modo mapa (o podrías hacerlo flotante)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Mapa de Estaciones", color = GreenDarker, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            IconButton(onClick = onClose) {
-                Icon(Icons.Filled.Close, null, tint = Color.Gray)
-            }
+            IconButton(onClick = onClose) { Icon(Icons.Filled.Close, null, tint = Color.Gray) }
         }
 
-        LaunchedEffect(Unit) {
-            viewModel.loadEstaciones()
-        }
+        LaunchedEffect(Unit) { viewModel.loadEstaciones() }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Card(
@@ -637,7 +505,6 @@ private fun MapSection(state: MainMenuUiState, viewModel: MainMenuViewModel, onC
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                // Aquí va tu componente de mapa original
                 MapaOsmContent(estaciones = state.listaEstaciones, viewModel)
             }
 
@@ -645,10 +512,7 @@ private fun MapSection(state: MainMenuUiState, viewModel: MainMenuViewModel, onC
                 Surface(
                     color = GreenPrimary,
                     shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(24.dp)
-                        .shadow(8.dp)
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).shadow(8.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
@@ -656,11 +520,7 @@ private fun MapSection(state: MainMenuUiState, viewModel: MainMenuViewModel, onC
                     ) {
                         Icon(Icons.Filled.DirectionsWalk, null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "${state.distanciaRuta} • ${state.tiempoRuta}",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("${state.distanciaRuta} • ${state.tiempoRuta}", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -670,5 +530,4 @@ private fun MapSection(state: MainMenuUiState, viewModel: MainMenuViewModel, onC
 
 private enum class MainTab { STORE, SCAN, RANKING }
 
-// Extensión helper para divider alpha si no usas Material3 completo con alpha
 fun Modifier.alpha(alpha: Float) = this.then(Modifier.background(Color.Black.copy(alpha = alpha)))
